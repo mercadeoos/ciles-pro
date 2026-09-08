@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141b52'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Mi perfil — CILES PRO</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body data-page="perfil">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll" id="scroll">
+
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:10px;">
+      <div class="app-avatar" style="width:76px; height:76px; font-size:26px;" data-user-initials></div>
+      <h1 class="app-h1" id="nombre-perfil" style="margin-top:14px;"></h1>
+      <p class="app-muted" id="ciudad-perfil"></p>
+      <div class="badge" id="nivel-chip" style="margin-top:8px; background:var(--acc-purple-soft); color:var(--navy-950);"></div>
+    </div>
+
+    <div class="app-row" style="margin-top:20px; gap:10px;">
+      <div class="app-card" style="flex:1; text-align:center; padding:12px;">
+        <div style="font-size:17px; font-weight:800; color:var(--navy-950);" id="stat-pts">0</div>
+        <div class="app-muted">Puntos</div>
+      </div>
+      <div class="app-card" style="flex:1; text-align:center; padding:12px;">
+        <div style="font-size:17px; font-weight:800; color:var(--navy-950);" id="stat-cursos">0</div>
+        <div class="app-muted">Cursos</div>
+      </div>
+      <div class="app-card" style="flex:1; text-align:center; padding:12px;">
+        <div style="font-size:17px; font-weight:800; color:var(--navy-950);" id="stat-insignias">0</div>
+        <div class="app-muted">Insignias</div>
+      </div>
+    </div>
+
+    <div class="app-card" style="margin-top:16px;">
+      <div class="app-row-between">
+        <span style="font-weight:700; font-size:13px; color:var(--navy-950);">Progreso al siguiente nivel</span>
+        <span class="app-muted" id="progreso-label"></span>
+      </div>
+      <div class="app-progress-track" style="margin-top:10px;"><div id="progreso-fill" class="app-progress-fill" style="width:0%;"></div></div>
+    </div>
+
+    <a href="casa.html" class="app-btn app-btn-outline" style="margin-top:16px;">🏗️ Ver mi casa CILES</a>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Insignias</h2>
+      <div id="insignias" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;"></div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Recursos</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+        <a href="escuelas.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-escuelas" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Escuelas</div>
+        </a>
+        <a href="comunidad.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-comunidad" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Comunidad</div>
+        </a>
+        <a href="directorio.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-directorio" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Directorio</div>
+        </a>
+        <a href="biblioteca.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-biblioteca" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Biblioteca</div>
+        </a>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Cómo ganar puntos</h2>
+      <div id="puntos-por" style="margin-top:10px;"></div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Canjea tus puntos</h2>
+      <div id="canjes" style="margin-top:10px;"></div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Top profesionales</h2>
+      <div id="ranking" style="margin-top:10px;"></div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <a href="../index.html" class="app-btn app-btn-outline">← Volver al inicio</a>
+    </div>
+
+  </div>
+  <div id="tabbar-slot"></div>
+</div>
+</div>
+
+<script src="data.js"></script>
+<script src="../assets/js/iconos.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("tabbar-slot").innerHTML = renderTabbarInstalador("perfil");
+
+  const nivel = NIVELES.find(n => n.id === USUARIO.nivelActual);
+  document.getElementById("nombre-perfil").textContent = USUARIO.nombre;
+  document.getElementById("ciudad-perfil").textContent = USUARIO.ciudad;
+  document.getElementById("nivel-chip").textContent = nivel.nombre;
+
+  document.getElementById("stat-pts").textContent = USUARIO.puntos.toLocaleString("es-CO");
+  document.getElementById("stat-cursos").textContent = `${USUARIO.cursosCompletados}/${USUARIO.cursosTotal}`;
+  document.getElementById("stat-insignias").textContent = USUARIO.insignias.length;
+
+  const p = pct(USUARIO.puntos, USUARIO.metaSiguienteNivel);
+  document.getElementById("progreso-fill").style.width = p + "%";
+  document.getElementById("progreso-label").textContent =
+    `${USUARIO.puntos.toLocaleString("es-CO")} / ${USUARIO.metaSiguienteNivel.toLocaleString("es-CO")} pts`;
+
+  document.getElementById("insignias").innerHTML = USUARIO.insignias.map(i => `
+    <div class="app-card" style="text-align:center; padding:14px;">
+      <div style="font-size:26px;">${i.icon}</div>
+      <p class="app-muted mt-8">${i.t}</p>
+    </div>`).join("");
+
+  document.getElementById("puntos-por").innerHTML = PUNTOS_POR.map(x => `
+    <div class="nivel-row">
+      <div class="nivel-row-badge acc-gold-bg" style="width:40px;height:40px;font-size:14px;">+${x.pts}</div>
+      <div style="flex:1; font-weight:700; font-size:13px; color:var(--navy-950);">${x.accion}</div>
+    </div>`).join("");
+
+  document.getElementById("canjes").innerHTML = CANJES.map(c => `
+    <div class="app-card" style="margin-top:10px;">
+      <div class="app-row-between">
+        <div class="app-row">
+          <span style="font-size:22px;">${c.icon}</span>
+          <div>
+            <div style="font-weight:800; font-size:13.5px; color:var(--navy-950);">${c.t}</div>
+            <div class="app-muted">${c.pts.toLocaleString("es-CO")} pts</div>
+          </div>
+        </div>
+        <button class="app-btn ${USUARIO.puntos >= c.pts ? "app-btn-primary" : "app-btn-outline"}" style="width:auto; padding:8px 14px; font-size:12px;" ${USUARIO.puntos >= c.pts ? "" : "disabled"}>
+          ${USUARIO.puntos >= c.pts ? "Canjear" : "Insuficiente"}
+        </button>
+      </div>
+      <p class="app-muted mt-8">${c.d}</p>
+    </div>`).join("");
+
+  document.getElementById("ic-escuelas").innerHTML = blobIcon("certificado","teal");
+  document.getElementById("ic-comunidad").innerHTML = blobIcon("chat","coral");
+  document.getElementById("ic-directorio").innerHTML = blobIcon("estrella","gold");
+  document.getElementById("ic-biblioteca").innerHTML = blobIcon("plano","purple");
+
+  document.getElementById("ranking").innerHTML = RANKING.map(r => `
+    <div class="nivel-row">
+      <div class="nivel-row-badge acc-teal-bg" style="width:36px;height:36px;font-size:13px;">${r.pos}</div>
+      <div style="flex:1;">
+        <div style="font-weight:800; font-size:13px; color:var(--navy-950);">${r.nombre}</div>
+        <div class="app-muted">${r.ciudad} · ${r.nivel}</div>
+      </div>
+      <div class="app-muted" style="font-weight:700;">${r.pts.toLocaleString("es-CO")} pts</div>
+    </div>`).join("");
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23001489'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Lección — CILES PRO Vendedores</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="vendedores">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll no-tabbar" id="scroll">
+
+    <div id="lesson-root"></div>
+    <div id="reward-root" hidden></div>
+
+  </div>
+</div>
+</div>
+
+<script src="assets/js/data-vendedores.js"></script>
+<script src="assets/js/iconos.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/app-vendedor.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const moduloId = params.get("m") || "0.1";
+let modulo, nivel;
+let paso = 0;
+let examIndex = 0;
+let examCorrectas = 0;
+let examRespondida = false;
+let examTerminado = false;
+
+/* Estructura de la micro-lección: cápsula de video + guion de 6 pasos +
+   infografía de repaso (con imagen) + examen final con el banco de preguntas completo. */
+const PASOS = [
+  {kicker:"Cápsula de video", capsula:true},
+  {kicker:"El gancho", key:m => m.guion.gancho, quote:true},
+  {kicker:"Vas a lograr", key:m => m.guion.objetivo},
+  {kicker:"En simple", key:m => m.guion.concepto},
+  {kicker:"Cómo se hace", key:m => m.guion.pasos},
+  {kicker:"Secreto del oficio", key:m => m.guion.tip, tip:true},
+  {kicker:"Cómo lo conviertes en venta", key:m => m.venta, quote:true},
+  {kicker:"Infografía de repaso", infografia:true},
+  {kicker:"Examen final", examen:true},
+];
+
+function render(){
+  if(!modulo){
+    document.getElementById("lesson-root").innerHTML = `<p class="app-lede">Módulo no encontrado. <a href="vendedores-home.html">Volver a inicio</a></p>`;
+    return;
+  }
+  const p = PASOS[paso];
+  const bars = PASOS.map((_,i) => `<i class="${i<=paso?"on":""}"></i>`).join("");
+
+  let cuerpo, disabledBtn = false, labelBtn = paso === PASOS.length-1 ? "Ver recompensa →" : "Siguiente →";
+
+  if(p.capsula){
+    cuerpo = `<div class="lesson-kicker">${p.kicker}</div>
+      <div class="media-placeholder video" style="margin-top:14px;">
+        <span class="mp-icon">▶️</span>
+        <span class="mp-label">Cápsula · ${modulo.duracion}</span>
+        <span class="mp-sub">Espacio reservado para el video corto del oficio</span>
+      </div>
+      <p class="lesson-text" style="margin-top:14px; font-size:14px;">${modulo.nombre}</p>`;
+  } else if(p.infografia){
+    const inf = modulo.infografia;
+    cuerpo = `<div class="lesson-kicker">${p.kicker}</div>
+      <div class="media-placeholder image" style="margin-top:14px;">
+        <span class="mp-icon">🖼️</span>
+        <span class="mp-label">${inf.titulo}</span>
+        <span class="mp-sub">Espacio reservado para la imagen de repaso</span>
+      </div>
+      <ul style="margin-top:14px; padding-left:18px; font-size:14px; color:var(--navy-950); line-height:1.6;">
+        ${inf.puntos.map(pt => `<li>${pt}</li>`).join("")}
+      </ul>
+      <div class="lesson-tip" style="margin-top:14px;"><span>💡</span><span>${inf.tip}</span></div>`;
+  } else if(p.examen){
+    cuerpo = renderExamenCuerpo();
+    disabledBtn = !examTerminado && !examRespondida;
+    labelBtn = examTerminado ? "Ver recompensa →" : (examIndex === modulo.quiz.length-1 ? "Ver resultados →" : "Siguiente pregunta →");
+  } else {
+    cuerpo = `<div class="lesson-kicker">${p.kicker}</div>
+      <p class="lesson-text ${p.quote?"quote":""}">${p.key(modulo)}</p>`;
+    if(p.tip){
+      cuerpo = `<div class="lesson-kicker">${p.kicker}</div>
+        <div class="lesson-tip"><span>💡</span><span>${p.key(modulo)}</span></div>`;
+    }
+  }
+
+  document.getElementById("lesson-root").innerHTML = `
+    <div class="lesson-topbar">
+      <button class="lesson-close" onclick="location.href='vendedores-home.html'">✕</button>
+      <div class="lesson-progress">${bars}</div>
+    </div>
+    <div class="app-eyebrow" style="margin-top:14px;">${modulo.id} · ${modulo.nombre}</div>
+    <div class="lesson-card">
+      ${cuerpo}
+      <div class="lesson-footer">
+        <button class="app-btn app-btn-primary" id="btn-siguiente" ${disabledBtn?"disabled":""} onclick="siguiente()">${labelBtn}</button>
+        ${paso>0 ? `<button class="app-btn app-btn-ghost" onclick="anterior()">← Atrás</button>` : ""}
+      </div>
+    </div>`;
+}
+
+function renderExamenCuerpo(){
+  const preguntas = modulo.quiz;
+  if(examTerminado){
+    return `<div class="lesson-kicker">Resultado del examen</div>
+      <div style="text-align:center; margin-top:18px;">
+        <div class="exam-score">${examCorrectas}/${preguntas.length}</div>
+        <p class="app-lede">${examCorrectas === preguntas.length ? "¡Examen perfecto! Dominaste el módulo." : "Buen intento — repasa la infografía cuando quieras."}</p>
+      </div>`;
+  }
+  const q = preguntas[examIndex];
+  return `<div class="exam-progress">Pregunta ${examIndex+1} de ${preguntas.length}</div>
+    <p class="lesson-text" style="margin-top:8px;">${q.p}</p>
+    <div id="quiz-opts">${q.o.map((op,i) => `
+      <button class="quiz-opt" onclick="responder(${i})" data-i="${i}">${op}</button>`).join("")}</div>
+    <div id="quiz-feedback"></div>`;
+}
+
+function responder(i){
+  if(examRespondida) return;
+  examRespondida = true;
+  const q = modulo.quiz[examIndex];
+  const correcta = q.r;
+  if(i === correcta) examCorrectas++;
+  document.querySelectorAll(".quiz-opt").forEach((btn,idx) => {
+    btn.classList.remove("correct","wrong");
+    if(idx === correcta) btn.classList.add("correct");
+    else if(idx === i) btn.classList.add("wrong");
+  });
+  document.getElementById("quiz-feedback").innerHTML = i === correcta
+    ? `<div class="lesson-tip" style="margin-top:14px;"><span>✅</span><span>¡Correcto!</span></div>`
+    : `<div class="lesson-tip" style="margin-top:14px; background:var(--acc-coral-soft); color:#7a2e2c;"><span>❌</span><span>La opción correcta era: ${q.o[correcta]}</span></div>`;
+  document.getElementById("btn-siguiente").disabled = false;
+}
+
+function siguiente(){
+  const p = PASOS[paso];
+  if(p.examen){
+    if(examTerminado){ mostrarRecompensa(); return; }
+    if(examIndex < modulo.quiz.length-1){ examIndex++; examRespondida=false; render(); document.getElementById("scroll").scrollTop = 0; return; }
+    examTerminado = true; render(); document.getElementById("scroll").scrollTop = 0; return;
+  }
+  if(paso < PASOS.length-1){ paso++; render(); document.getElementById("scroll").scrollTop = 0; }
+  else mostrarRecompensa();
+}
+function anterior(){
+  if(paso>0){ paso--; render(); document.getElementById("scroll").scrollTop = 0; }
+}
+
+function mostrarRecompensa(){
+  document.getElementById("lesson-root").hidden = true;
+  const root = document.getElementById("reward-root");
+  root.hidden = false;
+  root.innerHTML = `
+    <div class="reward-screen">
+      <div class="blob-icon size-xl reward-burst">${blobIcon(modulo.icono, nivel.color.replace("acc-",""))}</div>
+      <div class="xp-pill">⚡ +${modulo.gamificacion.xp} XP</div>
+      <h2 class="app-h1" style="font-size:21px;">${modulo.gamificacion.elemento}</h2>
+      <p class="app-lede">${modulo.guion.recompensaTexto}</p>
+      <button class="app-btn app-btn-primary" style="margin-top:10px;" onclick="continuar()">Continuar</button>
+      <a href="vendedores-casa.html" class="app-btn app-btn-ghost">Ver mi casa CILES →</a>
+    </div>`;
+  marcarModuloVendedorCompletado(modulo.id, modulo.gamificacion.xp);
+}
+
+function continuar(){
+  const sig = siguienteModuloVendedorPendiente();
+  location.href = sig ? `vendedores-leccion.html?m=${encodeURIComponent(sig.id)}` : "vendedores-home.html";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if(requiereOnboardingVendedor()) return;
+  modulo = moduloVendedorPorId(moduloId);
+  nivel = nivelVendedorDe(moduloId);
+  render();
+});
+</script>
+</body>
+</html>

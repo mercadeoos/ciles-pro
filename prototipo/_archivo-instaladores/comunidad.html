@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141b52'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Comunidad — CILES PRO</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body data-page="comunidad">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll no-tabbar" id="scroll">
+
+    <a href="universo.html" class="app-muted" style="font-weight:700;">← Inicio</a>
+    <span class="app-eyebrow" style="display:block; margin-top:14px;">Comunidad CILES PRO</span>
+    <h1 class="app-h1">Grupos, foro técnico y casos de éxito</h1>
+    <p class="app-lede">Conecta con otros profesionales, resuelve dudas de obra y comparte lo que has logrado.</p>
+
+    <h2 class="app-h2" style="margin-top:20px;">Grupos</h2>
+    <div id="grupos" style="margin-top:10px;"></div>
+
+    <h2 class="app-h2" style="margin-top:22px;">Foro técnico</h2>
+    <div id="foro" style="margin-top:10px;"></div>
+
+    <h2 class="app-h2" style="margin-top:22px;">Casos de éxito</h2>
+    <div id="casos" style="margin-top:10px;"></div>
+
+  </div>
+</div>
+</div>
+
+<script src="data.js"></script>
+<script src="../assets/js/iconos.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("grupos").innerHTML = GRUPOS.map(g => `
+    <div class="app-card" style="margin-top:10px;">
+      <div class="app-row-between">
+        <h4 style="font-size:14px; color:var(--navy-950);">${g.t}</h4>
+        <span class="app-muted" style="font-weight:700;">${g.miembros.toLocaleString("es-CO")}</span>
+      </div>
+      <p class="app-muted mt-8">${g.desc}</p>
+      <a href="#" class="app-btn app-btn-outline" style="margin-top:12px;">Unirme al grupo</a>
+    </div>`).join("");
+
+  document.getElementById("foro").innerHTML = FORO.map(f => `
+    <div class="app-card" style="margin-top:10px;">
+      <div class="app-row-between">
+        <span class="badge badge-outline">${f.tag}</span>
+        <span class="app-muted">${f.tiempo}</span>
+      </div>
+      <h4 style="font-size:13.5px; color:var(--navy-950);" class="mt-8">${f.titulo}</h4>
+      <div class="app-row-between mt-8">
+        <span class="app-muted">${f.autor} · ${f.nivel}</span>
+        <span class="app-muted">${f.respuestas} resp.</span>
+      </div>
+    </div>`).join("");
+
+  document.getElementById("casos").innerHTML = CASOS_EXITO.map(c => `
+    <div class="app-card app-card-navy" style="margin-top:10px;">
+      <span class="blob-icon size-sm">${blobIcon("estrella","gold")}</span>
+      <h4 style="font-size:14px;" class="mt-12">${c.t}</h4>
+      <p class="mt-8" style="color:rgba(255,255,255,.75); font-size:12.5px;">${c.d}</p>
+      <p class="app-muted mt-12" style="color:rgba(255,255,255,.55);">${c.autor}</p>
+    </div>`).join("");
+});
+</script>
+</body>
+</html>

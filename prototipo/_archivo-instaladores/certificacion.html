@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141b52'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Progreso — CILES PRO</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body data-page="certificacion">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll" id="scroll">
+
+    <span class="app-eyebrow">Certificación CILES PRO</span>
+    <h1 class="app-h1">4 niveles, 34 módulos técnicos</h1>
+    <p class="app-lede">Desde los fundamentos hasta el diseño avanzado. Toca un módulo para ver qué aprendes y qué producto CILES lo resuelve.</p>
+
+    <div class="app-card app-card-navy" style="margin-top:16px;">
+      <div class="app-row-between">
+        <div>
+          <div style="font-size:24px; font-weight:800;" id="pts-header">0</div>
+          <div class="app-muted" style="color:rgba(255,255,255,.7);">puntos</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:24px; font-weight:800;" id="modulos-header">0/34</div>
+          <div class="app-muted" style="color:rgba(255,255,255,.7);">módulos</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="niveles-detalle" style="margin-top:18px;"></div>
+
+  </div>
+  <div id="tabbar-slot"></div>
+</div>
+</div>
+
+<script src="data.js"></script>
+<script src="../assets/js/iconos.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+const NIVEL_ACC = {"level-1":"acc-coral","level-2":"acc-teal","level-3":"acc-purple","level-4":"acc-gold"};
+let nivelAbierto = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("tabbar-slot").innerHTML = renderTabbarInstalador("progreso");
+
+  const completados = new Set(USUARIO.modulosCompletados || []);
+  const totalModulos = todosLosModulos().length;
+
+  document.getElementById("pts-header").textContent = USUARIO.puntos.toLocaleString("es-CO");
+  document.getElementById("modulos-header").textContent = `${completados.size}/${totalModulos}`;
+
+  nivelAbierto = (location.hash || "").replace("#","") || null;
+  render();
+});
+
+function render(){
+  const completados = new Set(USUARIO.modulosCompletados || []);
+  document.getElementById("niveles-detalle").innerHTML = NIVELES.map(n => {
+    const hechos = n.modulos.filter(m => completados.has(m.id)).length;
+    const acc = NIVEL_ACC[n.color] || "acc-coral";
+    const abierto = nivelAbierto === n.slug;
+    return `<div class="app-card" id="${n.slug}" style="margin-top:12px;">
+      <div class="app-row-between" style="cursor:pointer;" onclick="toggleNivel('${n.slug}')">
+        <div class="app-row">
+          <div class="nivel-row-badge ${acc}-bg" style="width:40px;height:40px;font-size:16px;">${n.id}</div>
+          <div>
+            <div style="font-weight:800; color:var(--navy-950); font-size:14px;">${n.nombre}</div>
+            <div class="app-muted">${n.subtitulo} · ${hechos}/${n.modulos.length}</div>
+          </div>
+        </div>
+        <span style="font-size:18px; color:var(--ink-faint);">${abierto ? "−" : "+"}</span>
+      </div>
+      <div class="app-progress-track" style="margin-top:12px;">
+        <div class="app-progress-fill" style="width:${pct(hechos, n.modulos.length)}%; background:var(--${acc});"></div>
+      </div>
+      ${abierto ? `<div style="margin-top:14px;">${n.modulos.map(m => {
+        const on = completados.has(m.id);
+        return `<div class="modulo-card ${on?"done":""}" style="cursor:pointer;" onclick="toggleModulo(this)">
+          <div class="check">${on?"✓":""}</div>
+          <div style="flex:1;">
+            <div class="mc-title">${m.id} · ${m.titulo}</div>
+            <div class="mc-sub">${m.producto}</div>
+          </div>
+        </div>
+        <div class="modulo-detalle" hidden style="padding:2px 14px 14px 52px; margin-top:-6px;">
+          <p class="app-muted">${m.aprende}</p>
+          <div class="app-muted" style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+            <span>🎥 Cápsula de video — próximamente</span>
+            <span>📝 Examen — próximamente</span>
+          </div>
+        </div>`;
+      }).join("")}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function toggleNivel(slug){
+  nivelAbierto = nivelAbierto === slug ? null : slug;
+  render();
+}
+
+function toggleModulo(card){
+  const detalle = card.nextElementSibling;
+  if(detalle && detalle.classList.contains("modulo-detalle")) detalle.hidden = !detalle.hidden;
+}
+</script>
+</body>
+</html>

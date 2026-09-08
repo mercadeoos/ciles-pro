@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141b52'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Inicio — CILES PRO</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body data-page="universo">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll" id="scroll">
+
+    <div class="app-topbar">
+      <div>
+        <div class="app-muted" id="fecha-hoy"></div>
+        <h1 class="app-h2" id="saludo" style="margin-top:2px;">Hola 👋</h1>
+      </div>
+      <a href="perfil.html" class="app-avatar" data-user-initials></a>
+    </div>
+
+    <div class="streak-card" style="margin-top:18px;">
+      <div class="streak-flame">⚡</div>
+      <div>
+        <div class="streak-n" id="puntos-n">0 pts</div>
+        <div class="streak-l" id="nivel-actual-l"></div>
+      </div>
+    </div>
+
+    <div id="hoy-toca"></div>
+
+    <div style="margin-top:26px;">
+      <div class="app-row-between">
+        <h2 class="app-h2">Tu camino</h2>
+        <a href="certificacion.html" class="app-muted" style="font-weight:700;">Ver progreso →</a>
+      </div>
+      <div id="niveles-list" style="margin-top:12px;"></div>
+    </div>
+
+    <div style="margin-top:26px;">
+      <h2 class="app-h2">Explorar</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+        <a href="escuelas.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-escuelas" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Escuelas</div>
+        </a>
+        <a href="comunidad.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-comunidad" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Comunidad</div>
+        </a>
+        <a href="directorio.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-directorio" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Directorio</div>
+        </a>
+        <a href="biblioteca.html" class="app-card" style="padding:14px; text-align:center;">
+          <span class="blob-icon size-sm" id="ic-biblioteca" style="margin:0 auto;"></span>
+          <div style="font-weight:800; font-size:13px; margin-top:8px; color:var(--navy-950);">Biblioteca</div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+  <div id="tabbar-slot"></div>
+</div>
+</div>
+
+<script src="data.js"></script>
+<script src="../assets/js/iconos.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+const NIVEL_ACC = {"level-1":"acc-coral","level-2":"acc-teal","level-3":"acc-purple","level-4":"acc-gold"};
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("tabbar-slot").innerHTML = renderTabbarInstalador("inicio");
+
+  const nivel = NIVELES.find(n => n.id === USUARIO.nivelActual);
+  const completados = new Set(USUARIO.modulosCompletados || []);
+  const modulos = todosLosModulos();
+
+  document.getElementById("saludo").textContent = `Hola, ${USUARIO.nombre.split(" ")[0]} 👋`;
+  document.getElementById("fecha-hoy").textContent = new Date().toLocaleDateString("es-CO", {weekday:"long", day:"numeric", month:"long"});
+  document.getElementById("puntos-n").textContent = `${USUARIO.puntos.toLocaleString("es-CO")} pts`;
+  document.getElementById("nivel-actual-l").textContent = `${USUARIO.ciudad} · ${nivel.nombre}`;
+
+  const siguiente = modulos.find(m => !completados.has(m.id));
+  const hoyToca = document.getElementById("hoy-toca");
+  if(siguiente){
+    hoyToca.innerHTML = `
+      <div class="app-card" style="margin-top:16px;">
+        <div class="app-eyebrow">Hoy toca</div>
+        <div class="app-row" style="margin-top:10px;">
+          <span class="blob-icon size-md">${blobIcon("herramientas", NIVEL_ACC[siguiente.color].replace("acc-",""))}</span>
+          <div>
+            <div style="font-weight:800; color:var(--navy-950);">${siguiente.titulo}</div>
+            <div class="app-muted">${siguiente.nivelNombre} · Módulo ${siguiente.id}</div>
+          </div>
+        </div>
+        <a href="certificacion.html#${siguiente.nivelSlug}" class="app-btn app-btn-primary" style="margin-top:16px;">Ver módulo ${siguiente.id} →</a>
+      </div>`;
+  } else {
+    hoyToca.innerHTML = `
+      <div class="app-card app-card-navy" style="margin-top:16px; text-align:center;">
+        <div style="font-size:34px;">🏆</div>
+        <div style="font-weight:800; margin-top:6px;">¡Completaste los 34 módulos!</div>
+      </div>`;
+  }
+
+  document.getElementById("niveles-list").innerHTML = NIVELES.map(n => {
+    const hechos = n.modulos.filter(m => completados.has(m.id)).length;
+    const acc = NIVEL_ACC[n.color] || "acc-coral";
+    return `<a href="certificacion.html#${n.slug}" class="nivel-row">
+      <div class="nivel-row-badge ${acc}-bg">${n.id}</div>
+      <div style="flex:1;">
+        <div style="font-weight:800; font-size:13.5px; color:var(--navy-950);">${n.nombre}</div>
+        <div class="app-progress-track" style="margin-top:6px;"><div class="app-progress-fill" style="width:${pct(hechos, n.modulos.length)}%; background:var(--${acc});"></div></div>
+      </div>
+      <div class="app-muted" style="font-weight:700;">${hechos}/${n.modulos.length}</div>
+    </a>`;
+  }).join("");
+
+  document.getElementById("ic-escuelas").innerHTML = blobIcon("certificado","teal");
+  document.getElementById("ic-comunidad").innerHTML = blobIcon("chat","coral");
+  document.getElementById("ic-directorio").innerHTML = blobIcon("estrella","gold");
+  document.getElementById("ic-biblioteca").innerHTML = blobIcon("plano","purple");
+});
+</script>
+</body>
+</html>

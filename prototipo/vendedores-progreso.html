@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23001489'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Progreso — CILES PRO Vendedores</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="vendedores">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll" id="scroll">
+
+    <span class="app-eyebrow">Tu avance</span>
+    <h1 class="app-h1">Progreso del programa</h1>
+
+    <div class="app-card app-card-navy" style="margin-top:16px;">
+      <div class="app-row-between">
+        <div>
+          <div style="font-size:28px; font-weight:800;" id="xp-header">0</div>
+          <div class="app-muted" style="color:rgba(255,255,255,.7);">XP de <span id="xp-total-header"></span></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:28px; font-weight:800;" id="modulos-header">0/42</div>
+          <div class="app-muted" style="color:rgba(255,255,255,.7);">módulos</div>
+        </div>
+      </div>
+      <div class="app-progress-track" style="margin-top:14px; background:rgba(255,255,255,.15);">
+        <div class="app-progress-fill" id="xp-bar" style="width:0%;"></div>
+      </div>
+    </div>
+
+    <div id="niveles-detalle" style="margin-top:20px;"></div>
+
+  </div>
+  <div id="tabbar-slot"></div>
+</div>
+</div>
+
+<script src="assets/js/data-vendedores.js"></script>
+<script src="assets/js/iconos.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/app-vendedor.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if(requiereOnboardingVendedor()) return;
+  document.getElementById("tabbar-slot").innerHTML = renderTabbarVendedor("progreso");
+
+  const e = getEstadoVendedor();
+  const totalModulos = todosModulosVendedor().length;
+
+  document.getElementById("xp-header").textContent = e.xp.toLocaleString("es-CO");
+  document.getElementById("xp-total-header").textContent = PROGRAMA_VENDEDORES.xpTotal.toLocaleString("es-CO") + " XP";
+  document.getElementById("modulos-header").textContent = `${e.completados.length}/${totalModulos}`;
+  document.getElementById("xp-bar").style.width = pct(e.xp, PROGRAMA_VENDEDORES.xpTotal) + "%";
+
+  document.getElementById("niveles-detalle").innerHTML = NIVELES_VENDEDOR.map(n => {
+    const prog = progresoNivelVendedor(n);
+    const xpGanado = xpGanadoNivelVendedor(n);
+    const xpTotalNivel = xpTotalNivelVendedor(n);
+    const completo = prog.hechos === prog.total;
+    return `<div class="app-card" id="${n.slug}">
+      <div class="app-row-between">
+        <div class="app-row">
+          <div class="nivel-row-badge ${n.color}-bg" style="width:40px;height:40px;font-size:16px;">${n.id}</div>
+          <div>
+            <div style="font-weight:800; color:var(--navy-950); font-size:14px;">${n.nombre}</div>
+            <div class="app-muted">${prog.hechos}/${prog.total} módulos · ${xpGanado}/${xpTotalNivel} XP</div>
+          </div>
+        </div>
+        ${completo ? `<span class="xp-pill">🏅</span>` : ""}
+      </div>
+      <div class="app-progress-track" style="margin-top:12px;">
+        <div class="app-progress-fill" style="width:${prog.pct}%; background:var(--${n.color});"></div>
+      </div>
+      <div class="app-muted" style="margin-top:10px;">
+        ${completo ? `Insignia "${n.insignia.nombre}" ${n.insignia.desc ? "— "+n.insignia.desc : ""} desbloqueada.` : `Insignia al completar: "${n.insignia.nombre}"`}
+      </div>
+    </div>`;
+  }).join("");
+});
+</script>
+</body>
+</html>

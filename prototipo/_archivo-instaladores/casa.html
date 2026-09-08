@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141b52'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Mi Casa — CILES PRO</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body data-page="casa">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll" id="scroll">
+
+    <span class="app-eyebrow">Tu recompensa</span>
+    <h1 class="app-h1">Cada módulo arma tu casa</h1>
+    <p class="app-lede">34 módulos, 34 recompensas: 26 productos para el plano y 8 insignias por dominar los fundamentos.</p>
+    <p class="app-muted" style="margin-top:8px;">🎁 Ya recibiste dos obsequios de bienvenida en el tablero — protección esencial que toda casa necesita.</p>
+
+    <div class="app-row" style="gap:10px; margin-top:16px;">
+      <div class="app-card" style="flex:1; text-align:center; padding:14px;">
+        <div style="font-size:18px; font-weight:800; color:var(--navy-950);" id="casa-total-num">0/26</div>
+        <div class="app-muted">Materiales</div>
+      </div>
+      <div class="app-card" style="flex:1; text-align:center; padding:14px;">
+        <div style="font-size:18px; font-weight:800; color:var(--navy-950);" id="casa-insignias-num">0/8</div>
+        <div class="app-muted">Insignias</div>
+      </div>
+    </div>
+    <div class="app-progress-track" style="margin-top:12px;">
+      <div class="app-progress-fill" id="casa-total-fill" style="width:0%;"></div>
+    </div>
+    <div class="app-muted" style="text-align:right; margin-top:4px;" id="casa-total-pct"></div>
+
+    <div style="margin-top:22px;">
+      <h2 class="app-h2">Plano de tu casa</h2>
+      <p class="app-muted" style="margin-top:4px;">Toca cada casilla para ver qué desbloqueaste.</p>
+      <div id="casa-plano" class="casa-plano mt-16"></div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Insignias del camino</h2>
+      <div id="casa-insignias" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;"></div>
+    </div>
+
+  </div>
+  <div id="tabbar-slot"></div>
+</div>
+</div>
+
+<script src="data.js"></script>
+<script src="../assets/js/iconos.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("tabbar-slot").innerHTML = renderTabbarInstalador("casa");
+
+  const completados = new Set(USUARIO.modulosCompletados || []);
+  const desbloqueado = m => Boolean(m.recompensa.obsequio) || completados.has(m.id);
+
+  const modulos = todosLosModulos();
+  const modulosProducto = modulos.filter(m => m.recompensa && m.recompensa.tipo === "producto");
+  const modulosInsignia = modulos.filter(m => m.recompensa && m.recompensa.tipo === "insignia");
+
+  const productosDesbloqueados = modulosProducto.filter(desbloqueado).length;
+  const insigniasDesbloqueadas = modulosInsignia.filter(desbloqueado).length;
+
+  document.getElementById("casa-total-num").textContent = `${productosDesbloqueados}/${modulosProducto.length}`;
+  document.getElementById("casa-insignias-num").textContent = `${insigniasDesbloqueadas}/${modulosInsignia.length}`;
+  const p = Math.round((productosDesbloqueados / modulosProducto.length) * 100);
+  document.getElementById("casa-total-fill").style.width = p + "%";
+  document.getElementById("casa-total-pct").textContent = `${p}%`;
+
+  document.getElementById("casa-plano").innerHTML = HABITACIONES.map(h => {
+    const items = modulosProducto.filter(m => m.recompensa.habitacion === h.id);
+    const desbloqueados = items.filter(desbloqueado).length;
+    const slots = items.map(m => {
+      const on = desbloqueado(m);
+      const esObsequio = Boolean(m.recompensa.obsequio);
+      let tooltip;
+      if (esObsequio) tooltip = `🎁 ${m.recompensa.nombre} · Obsequio de bienvenida, ya lo tienes`;
+      else if (on) tooltip = `${m.recompensa.nombre} · Módulo ${m.id}`;
+      else tooltip = `Bloqueado · completa el módulo ${m.id} (${m.titulo})`;
+      return `
+        <div class="casa-slot ${on ? "unlocked" : "locked"} ${esObsequio ? "gift" : ""}" tabindex="0"
+             data-tooltip="${tooltip}">
+          ${on ? m.recompensa.icono : "?"}
+          ${esObsequio ? `<span class="casa-slot-gift">🎁</span>` : ""}
+          ${on || esObsequio ? "" : `<span class="casa-slot-lock">🔒</span>`}
+        </div>`;
+    }).join("");
+    return `
+      <div class="casa-hab" data-area="${h.area}">
+        <div class="casa-hab-header">
+          <span class="casa-hab-name">${h.icono} ${h.nombre}</span>
+          <span class="casa-hab-count">${desbloqueados}/${items.length}</span>
+        </div>
+        <div class="casa-slots">${slots}</div>
+      </div>`;
+  }).join("");
+
+  document.getElementById("casa-insignias").innerHTML = modulosInsignia.map(m => {
+    const on = desbloqueado(m);
+    return `
+      <div class="app-card" style="text-align:center; padding:14px;">
+        <div class="casa-badge ${on ? "unlocked" : "locked"}">${on ? m.recompensa.icono : "🔒"}</div>
+        <h4 style="font-size:12.5px;" class="mt-12">${m.recompensa.nombre}</h4>
+        <p class="app-muted mt-8">${on ? m.titulo : `Completa "${m.titulo}"`}</p>
+      </div>`;
+  }).join("");
+});
+</script>
+</body>
+</html>

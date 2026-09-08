@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141b52'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Escuelas — CILES PRO</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body data-page="escuelas">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll no-tabbar" id="scroll">
+
+    <a href="universo.html" class="app-muted" style="font-weight:700;">← Inicio</a>
+    <span class="app-eyebrow" style="display:block; margin-top:14px;">Escuelas CILES PRO</span>
+    <h1 class="app-h1">Contenido por producto, técnica y ventas</h1>
+    <p class="app-lede">Cada escuela agrupa el conocimiento que necesitas según tu rol.</p>
+
+    <div id="escuelas" style="margin-top:18px;"></div>
+
+  </div>
+</div>
+</div>
+
+<script src="data.js"></script>
+<script src="../assets/js/iconos.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const ICONOS = ["tablero","herramientas","venta"];
+  const COLORES = ["coral","teal","purple"];
+  document.getElementById("escuelas").innerHTML = ESCUELAS.map((e,i) => `
+    <div class="app-card" id="${e.id}" style="margin-top:14px; scroll-margin-top:20px;">
+      <div class="app-row">
+        <span class="blob-icon size-sm">${blobIcon(ICONOS[i%3], COLORES[i%3])}</span>
+        <div>
+          <h2 style="font-size:16px; color:var(--navy-950);">${e.nombre}</h2>
+          <p class="app-muted mt-4">${e.temas.length} áreas de contenido</p>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        ${e.temas.map(t => `
+          <div class="app-card app-card-tint" style="margin-top:8px; padding:12px;">
+            <h4 style="font-size:13.5px; color:var(--navy-950); font-weight:800;">${t.t}</h4>
+            <p class="app-muted mt-4">${t.d}</p>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+});
+</script>
+</body>
+</html>

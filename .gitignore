@@ -1,0 +1,14 @@
+# Archivos temporales de Office
+~$*.xlsx
+~$*.docx
+~$*.pptx
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Firebase (se agregará al integrar el paso a paso de la guía)
+.firebase/
+firebase-debug.log
+.firebaserc.local

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23001489'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Perfil — CILES PRO Vendedores</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="vendedores">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll" id="scroll">
+
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:10px;">
+      <div class="app-avatar" style="width:76px; height:76px; font-size:26px;" id="avatar-grande">V</div>
+      <h1 class="app-h1" id="nombre-perfil" style="margin-top:14px;">Vendedor CILES</h1>
+      <p class="app-muted" id="email-perfil"></p>
+      <p class="app-muted" id="ciudad-perfil"></p>
+      <div id="objetivo-chip" class="badge" style="margin-top:8px; background:var(--acc-purple-soft); color:var(--navy-950);"></div>
+    </div>
+
+    <div class="app-row" style="margin-top:20px; gap:10px;">
+      <div class="app-card" style="flex:1; text-align:center; padding:14px;">
+        <div style="font-size:20px; font-weight:800; color:var(--navy-950);" id="stat-xp">0</div>
+        <div class="app-muted">XP</div>
+      </div>
+      <div class="app-card" style="flex:1; text-align:center; padding:14px;">
+        <div style="font-size:20px; font-weight:800; color:var(--navy-950);" id="stat-modulos">0</div>
+        <div class="app-muted">Módulos</div>
+      </div>
+      <div class="app-card" style="flex:1; text-align:center; padding:14px;">
+        <div style="font-size:20px; font-weight:800; color:var(--navy-950);" id="stat-racha">0</div>
+        <div class="app-muted">Racha</div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <h2 class="app-h2">Insignias</h2>
+      <div id="insignias-list" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:10px;"></div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Recursos</h2>
+      <a href="vendedores-diccionario.html" class="app-card" style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+        <span class="blob-icon size-sm" id="ic-diccionario"></span>
+        <div style="flex:1;">
+          <div style="font-weight:800; font-size:13.5px; color:var(--navy-950);">Diccionario eléctrico</div>
+          <div class="app-muted">Palabras y conceptos del oficio, a la mano</div>
+        </div>
+        <span class="app-muted">→</span>
+      </a>
+    </div>
+
+    <div style="margin-top:24px;">
+      <a href="index.html" class="app-btn app-btn-outline">← Volver al sitio CILES PRO</a>
+    </div>
+
+  </div>
+  <div id="tabbar-slot"></div>
+</div>
+</div>
+
+<script src="assets/js/data-vendedores.js"></script>
+<script src="assets/js/iconos.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/app-vendedor.js"></script>
+<script>
+const OBJETIVO_LABEL = {
+  interno:"Vendedor interno CILES", aliado:"Ferretería / distribuidor aliado", nuevo:"Nuevo en la venta CILES",
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  if(requiereOnboardingVendedor()) return;
+  document.getElementById("tabbar-slot").innerHTML = renderTabbarVendedor("perfil");
+
+  const e = getEstadoVendedor();
+  document.getElementById("avatar-grande").textContent = iniciales(e.nombre);
+  document.getElementById("nombre-perfil").textContent = e.nombre || "Vendedor CILES";
+  document.getElementById("email-perfil").textContent = e.email || "";
+  document.getElementById("ciudad-perfil").textContent = e.ciudad || "";
+  document.getElementById("objetivo-chip").textContent = e.objetivo === "otro" ? (e.objetivoOtro || "Otro") : (OBJETIVO_LABEL[e.objetivo] || "Vendedor CILES");
+  document.getElementById("stat-xp").textContent = e.xp;
+  document.getElementById("stat-modulos").textContent = `${e.completados.length}/${todosModulosVendedor().length}`;
+  document.getElementById("stat-racha").textContent = e.racha;
+
+  document.getElementById("ic-diccionario").innerHTML = blobIcon("plano", "gold");
+
+  const insignias = NIVELES_VENDEDOR.filter(n => progresoNivelVendedor(n).pct === 100);
+  document.getElementById("insignias-list").innerHTML = insignias.length
+    ? insignias.map(n => `
+      <div class="app-card" style="flex:0 0 auto; width:110px; text-align:center; padding:14px 10px;">
+        <span class="blob-icon size-sm">${blobIcon("certificado", n.color.replace("acc-",""))}</span>
+        <div style="font-size:11.5px; font-weight:700; margin-top:8px; color:var(--navy-950);">${n.insignia.nombre}</div>
+      </div>`).join("")
+    : `<p class="app-muted">Completa tu primer nivel para ganar una insignia.</p>`;
+});
+</script>
+</body>
+</html>

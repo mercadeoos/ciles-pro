@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23001489'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Mi casa CILES — CILES PRO Vendedores</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="vendedores">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll" id="scroll">
+
+    <span class="app-eyebrow">Gamificación</span>
+    <h1 class="app-h1">Tu casa CILES</h1>
+    <p class="app-lede">Cada módulo que completas instala un producto real en tu casa virtual de vendedor.</p>
+
+    <div class="casa-grid-app" id="casa-grid" style="margin-top:18px;"></div>
+
+    <div style="margin-top:24px;">
+      <h2 class="app-h2">Elementos desbloqueados</h2>
+      <div id="lista-desbloqueados" style="margin-top:10px;"></div>
+    </div>
+
+  </div>
+  <div id="tabbar-slot"></div>
+</div>
+</div>
+
+<script src="assets/js/data-vendedores.js"></script>
+<script src="assets/js/iconos.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/app-vendedor.js"></script>
+<script>
+const ROOM_VENDEDOR = {
+  "0.1":"sala","0.2":"sala","0.3":"sala","0.4":"tablero","0.5":"sala","0.6":"tablero","0.7":"sala",
+  "1.1":"sala","1.2":"cuarto","1.3":"cuarto","1.4":"sala","1.5":"bano","1.6":"exterior","1.7":"cocina",
+  "1.8":"bano","1.9":"exterior","1.10":"cuarto","1.11":"sala","1.12":"sala",
+  "2.1":"tablero","2.2":"tablero","2.3":"tablero","2.4":"tablero","2.5":"tablero","2.6":"tablero",
+  "2.7":"tablero","2.8":"tablero","2.9":"tablero","2.10":"tablero","2.11":"tablero",
+  "3.1":"exterior","3.2":"exterior","3.3":"exterior","3.4":"exterior",
+  "4.1":"tablero","4.2":"tablero","4.3":"tablero","4.4":"tablero",
+  "5.1":"sala","5.2":"sala","5.3":"sala","5.4":"sala",
+};
+const ROOM_LABEL = {sala:"Sala", cocina:"Cocina", tablero:"Tablero", bano:"Baño", cuarto:"Cuarto", exterior:"Exterior"};
+
+document.addEventListener("DOMContentLoaded", () => {
+  if(requiereOnboardingVendedor()) return;
+  document.getElementById("tabbar-slot").innerHTML = renderTabbarVendedor("casa");
+
+  const e = getEstadoVendedor();
+  const todos = todosModulosVendedor();
+
+  const grid = document.getElementById("casa-grid");
+  grid.innerHTML = Object.keys(ROOM_LABEL).map(room => {
+    const modsRoom = todos.filter(m => ROOM_VENDEDOR[m.id] === room);
+    const hechos = modsRoom.filter(m => e.completados.includes(m.id));
+    return `<div class="casa-slot-app ${hechos.length ? "unlocked" : ""}" style="grid-area:${room};">
+      <div class="casa-room-label">${ROOM_LABEL[room]}</div>
+      <div style="font-size:22px;">${hechos.length ? "⚡".repeat(Math.min(hechos.length,3)) : "—"}</div>
+      <div class="app-muted">${hechos.length}/${modsRoom.length} instalados</div>
+    </div>`;
+  }).join("");
+
+  const lista = document.getElementById("lista-desbloqueados");
+  const hechos = todos.filter(m => e.completados.includes(m.id));
+  if(!hechos.length){
+    lista.innerHTML = `<div class="app-card"><p class="app-muted">Todavía no has desbloqueado nada. Completa tu primer módulo para empezar a construir tu casa CILES.</p>
+      <a href="vendedores-home.html" class="app-btn app-btn-primary" style="margin-top:12px;">Ir a mi primer módulo →</a></div>`;
+  } else {
+    lista.innerHTML = hechos.map(m => `
+      <div class="modulo-card done">
+        <span class="blob-icon size-sm">${blobIcon(m.icono, m.nivelColor.replace("acc-",""))}</span>
+        <div style="flex:1;">
+          <div class="mc-title">${m.gamificacion.elemento}</div>
+          <div class="mc-sub">${m.nombre} · ${ROOM_LABEL[ROOM_VENDEDOR[m.id]]}</div>
+        </div>
+        <div class="check">✓</div>
+      </div>`).join("");
+  }
+});
+</script>
+</body>
+</html>
