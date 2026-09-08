@@ -100,7 +100,9 @@ function renderTabbarVendedor(activo){
     {href:"vendedores-progreso.html", key:"progreso", ic:"📊", label:"Progreso"},
     {href:"vendedores-perfil.html", key:"perfil", ic:"👤", label:"Perfil"},
   ];
-  return `<nav class="tabbar">${tabs.map(t => `
+  return `<nav class="tabbar">
+    <div class="tabbar-brand"><img src="assets/img/logo-ciles-icono.png" alt="CILES"><span>CILES PRO</span></div>
+    ${tabs.map(t => `
     <a href="${t.href}" class="${t.key===activo?"active":""}">
       <span class="tab-ic">${t.ic}</span><span>${t.label}</span>
     </a>`).join("")}</nav>`;
