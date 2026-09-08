@@ -15,7 +15,7 @@
   <div class="phone-scroll" id="scroll">
 
     <div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:10px;">
-      <div class="app-avatar" style="width:76px; height:76px; font-size:26px;" id="avatar-grande">V</div>
+      <div class="app-avatar" style="width:76px; height:76px; font-size:26px; overflow:hidden;" id="avatar-grande">V</div>
       <h1 class="app-h1" id="nombre-perfil" style="margin-top:14px;">Vendedor CILES</h1>
       <p class="app-muted" id="email-perfil"></p>
       <p class="app-muted" id="ciudad-perfil"></p>
@@ -54,8 +54,20 @@
       </a>
     </div>
 
-    <div style="margin-top:24px;">
-      <a href="index.html" class="app-btn app-btn-outline">← Volver al sitio CILES PRO</a>
+    <div id="admin-link-wrap" hidden style="margin-top:24px;">
+      <a href="vendedores-admin.html" class="app-card" style="display:flex; align-items:center; gap:12px;">
+        <span class="blob-icon size-sm" id="ic-admin"></span>
+        <div style="flex:1;">
+          <div style="font-weight:800; font-size:13.5px; color:var(--navy-950);">Panel de administrador</div>
+          <div class="app-muted">Registros por ciudad</div>
+        </div>
+        <span class="app-muted">→</span>
+      </a>
+    </div>
+
+    <div style="margin-top:24px; display:flex; flex-direction:column; gap:10px;">
+      <button class="app-btn app-btn-outline" onclick="cerrarSesionVendedor()">Cerrar sesión</button>
+      <a href="index.html" class="app-btn app-btn-ghost">← Volver al sitio CILES PRO</a>
     </div>
 
   </div>
@@ -66,18 +78,24 @@
 <script src="assets/js/data-vendedores.js"></script>
 <script src="assets/js/iconos.js"></script>
 <script src="assets/js/main.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-vendedor.js"></script>
 <script src="assets/js/app-vendedor.js"></script>
 <script>
 const OBJETIVO_LABEL = {
   interno:"Vendedor interno CILES", aliado:"Ferretería / distribuidor aliado", nuevo:"Nuevo en la venta CILES",
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  if(requiereOnboardingVendedor()) return;
+document.addEventListener("DOMContentLoaded", async () => {
+  if(await requiereOnboardingVendedor()) return;
   document.getElementById("tabbar-slot").innerHTML = renderTabbarVendedor("perfil");
 
   const e = getEstadoVendedor();
-  document.getElementById("avatar-grande").textContent = iniciales(e.nombre);
+  const avatarEl = document.getElementById("avatar-grande");
+  if(e.foto) avatarEl.innerHTML = `<img src="${e.foto}" alt="" style="width:100%; height:100%; object-fit:cover;">`;
+  else avatarEl.textContent = iniciales(e.nombre);
   document.getElementById("nombre-perfil").textContent = e.nombre || "Vendedor CILES";
   document.getElementById("email-perfil").textContent = e.email || "";
   document.getElementById("ciudad-perfil").textContent = e.ciudad || "";
@@ -87,6 +105,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("stat-racha").textContent = e.racha;
 
   document.getElementById("ic-diccionario").innerHTML = blobIcon("plano", "gold");
+
+  if(esAdminCilesPro(e.email)){
+    document.getElementById("admin-link-wrap").hidden = false;
+    document.getElementById("ic-admin").innerHTML = blobIcon("certificado", "purple");
+  }
 
   const insignias = NIVELES_VENDEDOR.filter(n => progresoNivelVendedor(n).pct === 100);
   document.getElementById("insignias-list").innerHTML = insignias.length

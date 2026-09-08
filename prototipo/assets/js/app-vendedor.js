@@ -7,6 +7,7 @@ const VENDEDOR_KEY = "ciles_vendedor_v1";
 function estadoVendedorPorDefecto(){
   return {
     registrado:false,
+    uid:"", foto:"",
     nombre:"", email:"", ciudad:"", objetivo:"", objetivoOtro:"",
     completados:[],       // ids de módulo, ej "0.1"
     xp:0,
@@ -23,11 +24,29 @@ function getEstadoVendedor(){
   }catch(e){ return estadoVendedorPorDefecto(); }
 }
 
-function setEstadoVendedor(estado){
+/** Escribe solo en el caché local (usado por firebase-vendedor.js al sincronizar desde Firestore). */
+function setEstadoVendedorLocal(estado){
   localStorage.setItem(VENDEDOR_KEY, JSON.stringify(estado));
 }
 
-function requiereOnboardingVendedor(){
+/** Escribe en el caché local y, si hay sesión de Google activa, también en Firestore. */
+function setEstadoVendedor(estado){
+  setEstadoVendedorLocal(estado);
+  if(typeof fbAuth !== "undefined" && fbAuth.currentUser){
+    docVendedorRef(fbAuth.currentUser.uid).set(estado, {merge:true}).catch(err => console.error("Firestore:", err));
+  }
+}
+
+/**
+ * Espera la sesión de Firebase (si el SDK está cargado), sincroniza el
+ * progreso desde Firestore, y redirige al onboarding si falta login o
+ * datos de perfil (ciudad/objetivo). Usar siempre con await.
+ */
+async function requiereOnboardingVendedor(){
+  if(typeof esperarAuthVendedor === "function"){
+    const user = await esperarAuthVendedor();
+    if(!user){ location.href = "vendedores-onboarding.html"; return true; }
+  }
   const e = getEstadoVendedor();
   if(!e.registrado) { location.href = "vendedores-onboarding.html"; return true; }
   return false;

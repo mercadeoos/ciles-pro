@@ -43,10 +43,14 @@
 <script src="assets/js/data-vendedores.js"></script>
 <script src="assets/js/iconos.js"></script>
 <script src="assets/js/main.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-vendedor.js"></script>
 <script src="assets/js/app-vendedor.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  if(requiereOnboardingVendedor()) return;
+document.addEventListener("DOMContentLoaded", async () => {
+  if(await requiereOnboardingVendedor()) return;
   document.getElementById("tabbar-slot").innerHTML = renderTabbarVendedor("progreso");
 
   const e = getEstadoVendedor();

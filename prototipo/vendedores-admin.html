@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23001489'/><text x='50' y='70' font-size='58' text-anchor='middle'>%E2%9A%A1</text></svg>">
+<title>Panel admin — CILES PRO Vendedores</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body data-page="vendedores">
+
+<div class="phone-wrap">
+<div class="phone-shell">
+  <div class="phone-scroll no-tabbar" id="scroll">
+
+    <a href="vendedores-perfil.html" class="app-muted" style="font-weight:700;">← Perfil</a>
+    <span class="app-eyebrow" style="display:block; margin-top:14px;">Solo administradores</span>
+    <h1 class="app-h1">Registros por ciudad</h1>
+    <p class="app-lede" id="resumen-total">Cargando…</p>
+
+    <div id="lista-ciudades" style="margin-top:18px;"></div>
+
+    <div style="margin-top:26px;">
+      <h2 class="app-h2">Todos los asesores</h2>
+      <div id="lista-asesores" style="margin-top:10px;"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="assets/js/data-vendedores.js"></script>
+<script src="assets/js/iconos.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-vendedor.js"></script>
+<script src="assets/js/app-vendedor.js"></script>
+<script>
+const COLORES_BARRA = ["acc-coral", "acc-teal", "acc-purple", "acc-gold"];
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const user = await esperarAuthVendedor();
+  if(!user || !esAdminCilesPro(user.email)){
+    location.href = "vendedores-home.html";
+    return;
+  }
+
+  try{
+    const snap = await fbDb.collection("vendedores").get();
+    const todos = snap.docs.map(d => d.data());
+
+    document.getElementById("resumen-total").textContent = `${todos.length} asesor${todos.length === 1 ? "" : "es"} registrados en total.`;
+
+    const porCiudad = {};
+    todos.forEach(v => {
+      const c = (v.ciudad || "").trim() || "Sin ciudad";
+      porCiudad[c] = (porCiudad[c] || 0) + 1;
+    });
+    const ciudadesOrdenadas = Object.entries(porCiudad).sort((a,b) => b[1] - a[1]);
+    const max = ciudadesOrdenadas.length ? ciudadesOrdenadas[0][1] : 1;
+
+    document.getElementById("lista-ciudades").innerHTML = ciudadesOrdenadas.length
+      ? ciudadesOrdenadas.map(([ciudad, n], i) => `
+        <div class="app-card" style="margin-top:10px;">
+          <div class="app-row-between">
+            <span style="font-weight:800; font-size:13.5px; color:var(--navy-950);">${ciudad}</span>
+            <span class="app-muted" style="font-weight:700;">${n}</span>
+          </div>
+          <div class="app-progress-track" style="margin-top:10px;">
+            <div class="app-progress-fill" style="width:${pct(n, max)}%; background:var(--${COLORES_BARRA[i % COLORES_BARRA.length]});"></div>
+          </div>
+        </div>`).join("")
+      : `<p class="app-muted">Todavía no hay asesores registrados.</p>`;
+
+    document.getElementById("lista-asesores").innerHTML = todos
+      .sort((a,b) => (b.xp||0) - (a.xp||0))
+      .map(v => `
+        <div class="nivel-row">
+          <div class="nivel-row-badge acc-teal-bg" style="width:40px;height:40px;font-size:13px;">${iniciales(v.nombre)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:800; font-size:13px; color:var(--navy-950);">${v.nombre || "(sin nombre)"}</div>
+            <div class="app-muted">${v.ciudad || "Sin ciudad"} · ${(v.completados||[]).length} módulos</div>
+          </div>
+          <div class="app-muted" style="font-weight:700;">${v.xp||0} XP</div>
+        </div>`).join("") || `<p class="app-muted">Sin datos.</p>`;
+
+  }catch(err){
+    console.error(err);
+    document.getElementById("resumen-total").textContent = "No se pudieron cargar las estadísticas.";
+  }
+});
+</script>
+</body>
+</html>
