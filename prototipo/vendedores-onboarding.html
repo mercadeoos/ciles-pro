@@ -146,7 +146,7 @@ async function loginConGoogle(){
     irA("4b");
   }catch(err){
     console.error(err);
-    estado.textContent = "No se pudo iniciar sesión. Intentá de nuevo.";
+    estado.textContent = `No se pudo iniciar sesión (${err.code || err.message}). Intentá de nuevo.`;
     btn.disabled = false;
   }
 }
