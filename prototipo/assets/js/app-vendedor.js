@@ -101,7 +101,7 @@ function renderTabbarVendedor(activo){
     {href:"vendedores-perfil.html", key:"perfil", ic:"👤", label:"Perfil"},
   ];
   return `<nav class="tabbar">
-    <div class="tabbar-brand"><img src="assets/img/logo-ciles-icono.png" alt="CILES"><span>CILES PRO</span></div>
+    <div class="tabbar-brand"><img src="assets/img/logo-ciles.png" alt="CILES · Presente en el futuro"></div>
     ${tabs.map(t => `
     <a href="${t.href}" class="${t.key===activo?"active":""}">
       <span class="tab-ic">${t.ic}</span><span>${t.label}</span>
