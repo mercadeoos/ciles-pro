@@ -381,80 +381,73 @@
   flex-shrink:0;
 }
 
-/* ---------- Catálogo de producto (cartilla del vendedor) ---------- */
-.cat-row{
-  display:flex; align-items:center; gap:12px; width:100%; cursor:pointer;
-  font-family:inherit; text-align:left; border:none; appearance:none;
-  -webkit-appearance:none; color:inherit;
-}
-.cat-row .blob-icon{ flex-shrink:0; }
-.cat-card-title{ font-weight:800; font-size:13.5px; color:var(--navy-950); line-height:1.35; }
-.cat-chevron{ color:var(--ink-faint); flex-shrink:0; }
+/* ---------- Catálogo de producto (cartilla del vendedor) ----------
+   Carrusel de tarjetas integrado en la página (no un overlay aparte):
+   una tarjeta grande a la vez, con miniatura + pestañas, más una fila
+   de navegación y una tira de puntos para saltar directo a cualquier
+   producto — todo dentro del lenguaje visual claro de la app. */
+.cat-card-title{ font-weight:800; font-size:15px; color:var(--navy-950); line-height:1.35; }
 
-/* Visor de ficha a pantalla completa, con navegación entre productos */
-.cat-viewer{
-  position:fixed; inset:0; background:var(--navy-950); z-index:200;
-  display:flex; flex-direction:column;
-}
-.cat-viewer[hidden]{ display:none !important; }
-.cat-viewer-top{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:calc(14px + env(safe-area-inset-top)) 16px 12px;
-  flex-shrink:0;
-}
-.cat-viewer-btn{
-  width:38px; height:38px; border-radius:50%; flex-shrink:0;
-  background:rgba(255,255,255,.12); color:#fff; display:flex; align-items:center; justify-content:center;
-  border:none; cursor:pointer;
-}
-.cat-viewer-btn:hover{ background:rgba(255,255,255,.22); }
-.cat-viewer-top-info{ display:flex; align-items:center; gap:10px; flex:1; justify-content:flex-end; }
-.cat-viewer-count{ color:rgba(255,255,255,.7); font-size:12.5px; font-weight:700; }
-.cat-viewer-scroll{
-  flex:1; min-height:0; overflow-y:auto; padding:0 16px 16px; -webkit-overflow-scrolling:touch;
-}
-.cat-viewer-title{ color:#fff; font-size:18px; font-weight:800; line-height:1.3; margin-bottom:12px; }
+.cat-deck-card{ animation:catCardIn .22s ease; }
+@keyframes catCardIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
+
+.cat-deck-head{ display:flex; align-items:center; gap:12px; }
+.cat-deck-head .blob-icon{ flex-shrink:0; }
+
 .cat-thumb-wrap{
-  position:relative; cursor:zoom-in; border-radius:14px; overflow:hidden;
-  background:rgba(255,255,255,.06); min-height:120px; max-height:180px;
+  position:relative; cursor:zoom-in; border-radius:16px; overflow:hidden;
+  background:var(--app-bg); min-height:150px; max-height:230px; margin-top:16px;
   display:flex; align-items:center; justify-content:center;
 }
-.cat-thumb{ display:block; max-width:100%; max-height:180px; width:auto; opacity:0; transition:opacity .25s ease; }
+.cat-thumb{ display:block; max-width:100%; max-height:230px; width:auto; opacity:0; transition:opacity .25s ease; }
 .cat-thumb.loaded{ opacity:1; }
 .cat-thumb-wrap::before{
-  content:"Cargando…"; position:absolute; font-size:12px; color:rgba(255,255,255,.6); font-weight:700;
+  content:"Cargando…"; position:absolute; font-size:12px; color:var(--ink-faint); font-weight:700;
 }
 .cat-thumb-wrap:has(.cat-thumb.loaded)::before{ content:none; }
 .cat-img-zoom{
   position:absolute; right:8px; bottom:8px; display:flex; align-items:center; gap:4px;
-  background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:700;
+  background:rgba(0,20,137,.75); color:#fff; font-size:11px; font-weight:700;
   padding:5px 9px; border-radius:999px; pointer-events:none;
 }
+
 .cat-tabs{
-  display:flex; gap:6px; overflow-x:auto; margin-top:14px; padding-bottom:2px;
+  display:flex; gap:6px; overflow-x:auto; margin-top:16px; padding-bottom:2px;
   scrollbar-width:none;
 }
 .cat-tabs::-webkit-scrollbar{ display:none; }
 .cat-tab{
-  flex-shrink:0; background:rgba(255,255,255,.1); color:rgba(255,255,255,.75);
+  flex-shrink:0; background:var(--app-bg); color:var(--ink-soft);
   font-size:12.5px; font-weight:700; border:none; border-radius:999px; padding:9px 14px; cursor:pointer;
 }
 .cat-tab.active{ background:var(--orange-500); color:#fff; }
 .cat-tab-content{
-  margin-top:14px; background:rgba(255,255,255,.06); border-radius:14px; padding:16px;
+  margin-top:14px; background:var(--app-bg); border-radius:14px; padding:16px;
 }
-.cat-tab-content .cat-sec-text{ color:rgba(255,255,255,.9); font-size:14px; line-height:1.6; }
-.cat-viewer-nav{
-  display:flex; gap:10px; padding:12px 14px calc(14px + env(safe-area-inset-bottom));
-  flex-shrink:0; border-top:1px solid rgba(255,255,255,.1);
+.cat-tab-content .cat-sec-text{ color:var(--ink-soft); font-size:14px; line-height:1.6; }
+
+.cat-deck-nav{
+  display:flex; align-items:center; justify-content:center; gap:16px; margin-top:16px;
 }
-.cat-viewer-nav-btn{
-  flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
-  background:rgba(255,255,255,.1); color:#fff; font-weight:700; font-size:13px;
-  border:none; border-radius:14px; padding:12px; cursor:pointer;
+.cat-deck-btn{
+  width:42px; height:42px; border-radius:50%; flex-shrink:0;
+  background:#fff; color:var(--navy-950); display:flex; align-items:center; justify-content:center;
+  border:none; box-shadow:0 2px 10px rgba(20,27,82,.08); cursor:pointer;
 }
-.cat-viewer-nav-btn:hover:not(:disabled){ background:rgba(255,255,255,.2); }
-.cat-viewer-nav-btn:disabled{ opacity:.3; cursor:default; }
+.cat-deck-btn:hover:not(:disabled){ background:var(--acc-orange-soft, var(--orange-100)); }
+.cat-deck-btn:disabled{ opacity:.3; cursor:default; }
+.cat-deck-count{ font-size:13px; font-weight:800; color:var(--navy-950); min-width:56px; text-align:center; }
+
+.cat-dots{
+  display:flex; gap:7px; overflow-x:auto; margin-top:16px; padding:4px 2px 10px;
+  scrollbar-width:none;
+}
+.cat-dots::-webkit-scrollbar{ display:none; }
+.cat-dot{
+  flex-shrink:0; width:9px; height:9px; border-radius:50%; border:none; cursor:pointer;
+  background:var(--dot-color, var(--acc-teal)); opacity:.3; padding:0; transition:opacity .15s ease, transform .15s ease;
+}
+.cat-dot.active{ opacity:1; transform:scale(1.6); }
 
 /* Lightbox: zoom a pantalla completa de la ficha, por encima del visor */
 .cat-lightbox{

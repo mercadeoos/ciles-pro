@@ -17,39 +17,16 @@
     <a href="vendedores-perfil.html" class="app-muted" style="font-weight:700;">← Perfil</a>
     <span class="app-eyebrow" style="display:block; margin-top:14px;">Recurso de consulta</span>
     <h1 class="app-h1">Catálogo CILES</h1>
-    <p class="app-lede">Toca un producto: mira su ficha y toca las pestañas para ver normas, características, dónde usarlo y más.</p>
+    <p class="app-lede">Desliza entre productos, mira la ficha y toca las pestañas para ver normas, características y más.</p>
 
     <input id="buscar" class="app-input" style="margin-top:16px;" placeholder="Buscar producto…">
     <div id="filtro-cat" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;"></div>
 
-    <div id="lista" style="margin-top:14px;"></div>
+    <div id="zona-tarjeta" style="margin-top:16px;"></div>
     <p id="sin-resultados" class="app-muted hidden" style="text-align:center; margin-top:16px;">No se encontraron productos con ese criterio.</p>
 
   </div>
 </div>
-</div>
-
-<div class="cat-viewer" id="viewer" hidden>
-  <div class="cat-viewer-top">
-    <button class="cat-viewer-btn" id="viewer-close" aria-label="Cerrar"></button>
-    <div class="cat-viewer-top-info">
-      <span class="badge" id="viewer-cat"></span>
-      <span class="cat-viewer-count" id="viewer-count"></span>
-    </div>
-  </div>
-  <div class="cat-viewer-scroll" id="viewer-scroll">
-    <h2 class="cat-viewer-title" id="viewer-title"></h2>
-    <div class="cat-thumb-wrap" id="viewer-thumb-wrap">
-      <img class="cat-thumb" id="viewer-thumb" alt="">
-      <span class="cat-img-zoom">Ampliar</span>
-    </div>
-    <div class="cat-tabs" id="viewer-tabs"></div>
-    <div class="cat-tab-content" id="viewer-tab-content"></div>
-  </div>
-  <div class="cat-viewer-nav">
-    <button class="cat-viewer-nav-btn" id="viewer-prev"></button>
-    <button class="cat-viewer-nav-btn" id="viewer-next"></button>
-  </div>
 </div>
 
 <div class="cat-lightbox" id="lightbox" hidden>
@@ -85,9 +62,9 @@ const SECCIONES = [
 ];
 
 let pdfCartilla = null;
-const cachePaginas = {}; // "pagina@escala" -> dataURL
+const cachePaginas = {};
 let listaActual = [];
-let posVisor = 0;
+let posActual = 0;
 let tabActiva = 0;
 
 function getPdfCartilla(){
@@ -110,56 +87,6 @@ async function renderPaginaCartilla(pagina, escala){
   return dataUrl;
 }
 
-function renderTabs(p){
-  const secciones = SECCIONES.filter(s => p[s.key]);
-  document.getElementById("viewer-tabs").innerHTML = secciones.map((s, i) => `
-    <button class="cat-tab${i === tabActiva ? " active" : ""}" data-i="${i}">${s.label}</button>`).join("");
-  document.getElementById("viewer-tab-content").innerHTML =
-    `<div class="cat-sec-text">${secciones[tabActiva] ? p[secciones[tabActiva].key] : ""}</div>`;
-}
-
-function mostrarEnVisor(pos){
-  if(pos < 0 || pos >= listaActual.length) return;
-  posVisor = pos;
-  tabActiva = 0;
-  const p = listaActual[pos];
-  const [, color] = CAT_ICONO[p.cat] || ["tablero", "navy"];
-
-  document.getElementById("viewer-cat").textContent = p.cat;
-  document.getElementById("viewer-cat").style.background = `var(--acc-${color}-soft, var(--acc-teal-soft))`;
-  document.getElementById("viewer-count").textContent = `${pos + 1} / ${listaActual.length}`;
-  document.getElementById("viewer-prev").disabled = pos === 0;
-  document.getElementById("viewer-next").disabled = pos === listaActual.length - 1;
-  document.getElementById("viewer-title").textContent = p.nombre;
-  document.getElementById("viewer-scroll").scrollTop = 0;
-
-  renderTabs(p);
-
-  const thumb = document.getElementById("viewer-thumb");
-  thumb.classList.remove("loaded");
-  thumb.removeAttribute("src");
-  renderPaginaCartilla(p.pagina, 1.1).then(url => {
-    if(listaActual[posVisor] !== p) return;
-    thumb.src = url;
-    thumb.classList.add("loaded");
-  });
-
-  const sig = listaActual[pos + 1];
-  if(sig) renderPaginaCartilla(sig.pagina, 1.1).catch(() => {});
-}
-
-function abrirVisor(lista, pos){
-  listaActual = lista;
-  document.getElementById("viewer").hidden = false;
-  document.body.style.overflow = "hidden";
-  mostrarEnVisor(pos);
-}
-
-function cerrarVisor(){
-  document.getElementById("viewer").hidden = true;
-  document.body.style.overflow = "";
-}
-
 function abrirLightbox(pagina, nombre){
   const body = document.getElementById("lightbox-body");
   body.innerHTML = `<div class="cat-lightbox-loading">Cargando ficha…</div>`;
@@ -170,19 +97,79 @@ function abrirLightbox(pagina, nombre){
     body.innerHTML = `<p class="app-muted" style="color:#fff; text-align:center; padding:30px;">No se pudo cargar la ficha.</p>`;
   });
 }
+function cerrarLightbox(){ document.getElementById("lightbox").hidden = true; }
 
-function cerrarLightbox(){
-  document.getElementById("lightbox").hidden = true;
+function renderTarjeta(){
+  const zona = document.getElementById("zona-tarjeta");
+  document.getElementById("sin-resultados").classList.toggle("hidden", listaActual.length > 0);
+
+  if(!listaActual.length){ zona.innerHTML = ""; return; }
+  const p = listaActual[posActual];
+  const [tipo, color] = CAT_ICONO[p.cat] || ["tablero", "navy"];
+  const secciones = SECCIONES.filter(s => p[s.key]);
+
+  zona.innerHTML = `
+    <div class="app-card cat-deck-card">
+      <div class="cat-deck-head">
+        <span class="blob-icon size-sm">${blobIcon(tipo, color)}</span>
+        <div style="flex:1;">
+          <span class="badge" style="background:var(--acc-${color}-soft, var(--acc-teal-soft)); color:var(--navy-950);">${p.cat}</span>
+          <div class="cat-card-title" style="margin-top:6px;">${p.nombre}</div>
+        </div>
+      </div>
+
+      <div class="cat-thumb-wrap" id="thumb-wrap">
+        <img class="cat-thumb" id="thumb-img" alt="Ficha técnica: ${p.nombre}">
+        <span class="cat-img-zoom">${uiIcon("buscar", 14)} Ampliar</span>
+      </div>
+
+      <div class="cat-tabs" id="tabs-row">
+        ${secciones.map((s, i) => `<button class="cat-tab${i === tabActiva ? " active" : ""}" data-i="${i}">${s.label}</button>`).join("")}
+      </div>
+      <div class="cat-tab-content" id="tab-content">
+        <div class="cat-sec-text">${secciones[tabActiva] ? p[secciones[tabActiva].key] : ""}</div>
+      </div>
+    </div>
+
+    <div class="cat-deck-nav">
+      <button class="cat-deck-btn" id="btn-prev" ${posActual === 0 ? "disabled" : ""}>${uiIcon("chevron", 18).replace('d="m9 6 6 6-6 6"', 'd="m15 6-6 6 6 6"')}</button>
+      <span class="cat-deck-count">${posActual + 1} / ${listaActual.length}</span>
+      <button class="cat-deck-btn" id="btn-next" ${posActual === listaActual.length - 1 ? "disabled" : ""}>${uiIcon("chevron", 18)}</button>
+    </div>
+
+    <div class="cat-dots" id="tira-dots"></div>
+  `;
+
+  document.getElementById("tira-dots").innerHTML = listaActual.map((item, i) => {
+    const [, c] = CAT_ICONO[item.cat] || ["tablero", "navy"];
+    return `<button class="cat-dot${i === posActual ? " active" : ""}" data-i="${i}" style="--dot-color:var(--acc-${c});" aria-label="${item.nombre}"></button>`;
+  }).join("");
+
+  const dotActivo = document.querySelector(".cat-dot.active");
+  if(dotActivo) dotActivo.scrollIntoView({inline:"center", block:"nearest"});
+
+  const thumb = document.getElementById("thumb-img");
+  renderPaginaCartilla(p.pagina, 1.1).then(url => {
+    if(listaActual[posActual] !== p) return;
+    thumb.src = url;
+    thumb.classList.add("loaded");
+  });
+  const sig = listaActual[posActual + 1];
+  if(sig) renderPaginaCartilla(sig.pagina, 1.1).catch(() => {});
+}
+
+function irA(pos){
+  if(pos < 0 || pos >= listaActual.length) return;
+  posActual = pos;
+  tabActiva = 0;
+  renderTarjeta();
+  document.getElementById("scroll").scrollTo({top: 0, behavior:"smooth"});
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(await requiereOnboardingVendedor()) return;
 
-  document.getElementById("viewer-close").innerHTML = uiIcon("cerrar", 22);
   document.getElementById("lightbox-close").innerHTML = uiIcon("cerrar", 22);
-  document.getElementById("viewer-prev").innerHTML = uiIcon("chevron", 16).replace('d="m9 6 6 6-6 6"', 'd="m15 6-6 6 6 6"') + " Anterior";
-  document.getElementById("viewer-next").innerHTML = "Siguiente " + uiIcon("chevron", 16);
-  document.querySelector("#viewer-thumb-wrap .cat-img-zoom").innerHTML = uiIcon("buscar", 14) + " Ampliar";
 
   let catActiva = "todas";
   const cats = ["todas", ...Array.from(new Set(CARTILLA_VENDEDOR.map(p => p.cat)))];
@@ -190,36 +177,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("filtro-cat").innerHTML = cats.map(c => `
     <button class="chip${c === "todas" ? " active" : ""}" data-cat="${c}" aria-pressed="${c === "todas" ? "true" : "false"}">${c === "todas" ? "Todas" : c}</button>`).join("");
 
-  function filtrar(){
+  function filtrarYMostrar(mantenerProducto){
     const q = document.getElementById("buscar").value.trim().toLowerCase();
-    return CARTILLA_VENDEDOR.filter(p => {
+    const anterior = mantenerProducto ? listaActual[posActual] : null;
+    listaActual = CARTILLA_VENDEDOR.filter(p => {
       const matchCat = catActiva === "todas" || p.cat === catActiva;
       const matchTexto = !q || [p.nombre, p.cat, p.caracteristicas, p.dondeUsarlo].some(v => v && v.toLowerCase().includes(q));
       return matchCat && matchTexto;
     });
+    const idxAnterior = anterior ? listaActual.indexOf(anterior) : -1;
+    posActual = idxAnterior >= 0 ? idxAnterior : 0;
+    tabActiva = 0;
+    renderTarjeta();
   }
 
-  function render(){
-    const filtrados = filtrar();
-
-    document.getElementById("lista").innerHTML = filtrados.map((p) => {
-      const [tipo, color] = CAT_ICONO[p.cat] || ["tablero", "navy"];
-      const idx = CARTILLA_VENDEDOR.indexOf(p);
-      return `
-      <button class="app-card cat-row" data-idx="${idx}" style="margin-top:10px;">
-        <span class="blob-icon size-sm">${blobIcon(tipo, color)}</span>
-        <div style="flex:1; text-align:left;">
-          <span class="badge" style="background:var(--acc-${color}-soft, var(--acc-teal-soft)); color:var(--navy-950);">${p.cat}</span>
-          <div class="cat-card-title" style="margin-top:6px;">${p.nombre}</div>
-        </div>
-        <span class="cat-chevron">${uiIcon("chevron", 20)}</span>
-      </button>`;
-    }).join("");
-
-    document.getElementById("sin-resultados").classList.toggle("hidden", filtrados.length > 0);
-  }
-
-  document.getElementById("buscar").addEventListener("input", render);
+  document.getElementById("buscar").addEventListener("input", () => filtrarYMostrar(false));
   document.getElementById("filtro-cat").addEventListener("click", e => {
     const chip = e.target.closest(".chip");
     if (!chip) return;
@@ -228,62 +200,50 @@ document.addEventListener("DOMContentLoaded", async () => {
       c.classList.toggle("active", c === chip);
       c.setAttribute("aria-pressed", String(c === chip));
     });
-    render();
+    filtrarYMostrar(false);
   });
 
-  document.getElementById("lista").addEventListener("click", e => {
-    const row = e.target.closest(".cat-row");
-    if (!row) return;
-    const idx = Number(row.dataset.idx);
-    const lista = filtrar();
-    const pos = lista.findIndex(p => CARTILLA_VENDEDOR.indexOf(p) === idx);
-    abrirVisor(lista, pos < 0 ? 0 : pos);
-  });
-
-  document.getElementById("viewer-close").addEventListener("click", cerrarVisor);
-  document.getElementById("viewer-prev").addEventListener("click", () => mostrarEnVisor(posVisor - 1));
-  document.getElementById("viewer-next").addEventListener("click", () => mostrarEnVisor(posVisor + 1));
-
-  document.getElementById("viewer-tabs").addEventListener("click", e => {
+  document.getElementById("zona-tarjeta").addEventListener("click", e => {
+    if(e.target.closest("#thumb-wrap")){
+      const p = listaActual[posActual];
+      if(p) abrirLightbox(p.pagina, p.nombre);
+      return;
+    }
     const tab = e.target.closest(".cat-tab");
-    if(!tab) return;
-    tabActiva = Number(tab.dataset.i);
-    renderTabs(listaActual[posVisor]);
-  });
-
-  document.getElementById("viewer-thumb-wrap").addEventListener("click", () => {
-    const p = listaActual[posVisor];
-    if(p) abrirLightbox(p.pagina, p.nombre);
+    if(tab){
+      tabActiva = Number(tab.dataset.i);
+      renderTarjeta();
+      return;
+    }
+    if(e.target.closest("#btn-prev")){ irA(posActual - 1); return; }
+    if(e.target.closest("#btn-next")){ irA(posActual + 1); return; }
+    const dot = e.target.closest(".cat-dot");
+    if(dot){ irA(Number(dot.dataset.i)); return; }
   });
 
   document.getElementById("lightbox-close").addEventListener("click", cerrarLightbox);
   document.getElementById("lightbox").addEventListener("click", e => {
     if(e.target.id === "lightbox") cerrarLightbox();
   });
-
   document.addEventListener("keydown", e => {
     if(!document.getElementById("lightbox").hidden){
       if(e.key === "Escape") cerrarLightbox();
       return;
     }
-    if(document.getElementById("viewer").hidden) return;
-    if(e.key === "Escape") cerrarVisor();
-    if(e.key === "ArrowLeft") mostrarEnVisor(posVisor - 1);
-    if(e.key === "ArrowRight") mostrarEnVisor(posVisor + 1);
+    if(e.key === "ArrowLeft") irA(posActual - 1);
+    if(e.key === "ArrowRight") irA(posActual + 1);
   });
 
-  // swipe táctil sobre la ficha para navegar entre productos
   let touchX = null;
-  const viewerScroll = document.getElementById("viewer-scroll");
-  viewerScroll.addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, {passive:true});
-  viewerScroll.addEventListener("touchend", e => {
+  document.getElementById("zona-tarjeta").addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, {passive:true});
+  document.getElementById("zona-tarjeta").addEventListener("touchend", e => {
     if(touchX === null) return;
     const delta = e.changedTouches[0].clientX - touchX;
-    if(Math.abs(delta) > 70) mostrarEnVisor(posVisor + (delta < 0 ? 1 : -1));
+    if(Math.abs(delta) > 70) irA(posActual + (delta < 0 ? 1 : -1));
     touchX = null;
   }, {passive:true});
 
-  render();
+  filtrarYMostrar(false);
 });
 </script>
 </body>
