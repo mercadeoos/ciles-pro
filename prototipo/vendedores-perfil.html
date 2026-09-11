@@ -52,6 +52,14 @@
         </div>
         <span class="app-muted">→</span>
       </a>
+      <a href="vendedores-catalogo.html" class="app-card" style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+        <span class="blob-icon size-sm" id="ic-catalogo"></span>
+        <div style="flex:1;">
+          <div style="font-weight:800; font-size:13.5px; color:var(--navy-950);">Catálogo CILES</div>
+          <div class="app-muted">La cartilla del vendedor, producto por producto</div>
+        </div>
+        <span class="app-muted">→</span>
+      </a>
     </div>
 
     <div id="admin-link-wrap" hidden style="margin-top:24px;">
@@ -105,6 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("stat-racha").textContent = e.racha;
 
   document.getElementById("ic-diccionario").innerHTML = blobIcon("plano", "gold");
+  document.getElementById("ic-catalogo").innerHTML = blobIcon("tablero", "teal");
   document.getElementById("ic-salir").innerHTML = uiIcon("salir", 18);
 
   if(esAdminCilesPro(e.email)){

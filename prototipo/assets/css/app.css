@@ -367,6 +367,23 @@
   flex-shrink:0;
 }
 
+/* ---------- Catálogo de producto (cartilla del vendedor) ---------- */
+.cat-card{ cursor:pointer; }
+.cat-card-head{ display:flex; align-items:center; gap:12px; }
+.cat-card-head .blob-icon{ flex-shrink:0; }
+.cat-card-title{ flex:1; font-weight:800; font-size:13.5px; color:var(--navy-950); line-height:1.35; }
+.cat-chevron{ color:var(--ink-faint); flex-shrink:0; transition:transform .2s ease; }
+.cat-card.open .cat-chevron{ transform:rotate(90deg); }
+.cat-card-body{
+  max-height:0; overflow:hidden; transition:max-height .25s ease;
+}
+.cat-card.open .cat-card-body{ max-height:1400px; }
+.cat-card-body-inner{ padding-top:16px; }
+.cat-sec{ margin-top:12px; }
+.cat-sec:first-child{ margin-top:0; }
+.cat-sec-label{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--acc-teal); }
+.cat-sec-text{ font-size:13.5px; color:var(--ink-soft); line-height:1.5; margin-top:4px; }
+
 /* =========================================================
    Escritorio real (≥900px) — deja de simular un teléfono:
    barra lateral fija en vez de pestañas inferiores, y contenido

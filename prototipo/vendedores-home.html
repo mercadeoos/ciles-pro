@@ -55,6 +55,15 @@
       <span class="app-muted">→</span>
     </a>
 
+    <a href="vendedores-catalogo.html" class="app-card" style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+      <span class="blob-icon size-sm" id="ic-catalogo"></span>
+      <div style="flex:1;">
+        <div style="font-weight:800; font-size:13.5px; color:var(--navy-950);">Catálogo CILES</div>
+        <div class="app-muted">La cartilla del vendedor, producto por producto</div>
+      </div>
+      <span class="app-muted">→</span>
+    </a>
+
   </div>
   <div id="tabbar-slot"></div>
 </div>
@@ -121,6 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }).join("");
 
   document.getElementById("ic-diccionario").innerHTML = blobIcon("plano", "gold");
+  document.getElementById("ic-catalogo").innerHTML = blobIcon("tablero", "teal");
 });
 </script>
 </body>
