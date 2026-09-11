@@ -165,7 +165,8 @@ function mostrarRecompensa(){
   root.hidden = false;
   root.innerHTML = `
     <div class="reward-screen">
-      <div class="blob-icon size-xl reward-burst">${blobIcon(modulo.icono, nivel.color.replace("acc-",""))}</div>
+      <img src="assets/img/breiki.png" alt="Breiki" class="mascot mascot-sm reward-burst">
+      <div class="blob-icon size-lg reward-burst" style="animation-delay:.1s;">${blobIcon(modulo.icono, nivel.color.replace("acc-",""))}</div>
       <div class="xp-pill">⚡ +${modulo.gamificacion.xp} XP</div>
       <h2 class="app-h1" style="font-size:21px;">${modulo.gamificacion.elemento}</h2>
       <p class="app-lede">${modulo.guion.recompensaTexto}</p>

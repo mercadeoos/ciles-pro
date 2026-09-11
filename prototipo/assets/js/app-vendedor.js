@@ -34,7 +34,13 @@ function setEstadoVendedorLocal(estado){
 function setEstadoVendedor(estado){
   setEstadoVendedorLocal(estado);
   if(typeof fbAuth !== "undefined" && fbAuth.currentUser){
-    docVendedorRef(fbAuth.currentUser.uid).set(estado, {merge:true}).catch(err => console.error("Firestore:", err));
+    const uid = fbAuth.currentUser.uid;
+    docVendedorRef(uid).set(estado, {merge:true}).catch(err => console.error("Firestore:", err));
+    // Copia pública mínima (sin correo) para el ranking — cualquier asesor puede leer esta colección.
+    fbDb.collection("ranking_publico").doc(uid).set({
+      nombre: estado.nombre, foto: estado.foto, ciudad: estado.ciudad,
+      xp: estado.xp, modulos: estado.completados.length,
+    }, {merge:true}).catch(err => console.error("Firestore ranking:", err));
   }
 }
 

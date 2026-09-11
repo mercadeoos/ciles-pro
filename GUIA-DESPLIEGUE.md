@@ -116,10 +116,18 @@ service cloud.firestore {
          request.auth.token.email in ["mercadeo@ciles.co", "pablo.patino@ciles.co"]);
       allow write: if request.auth != null && request.auth.uid == vendedorId;
     }
+    match /ranking_publico/{vendedorId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == vendedorId;
+    }
   }
 }
 ```
-Notá que los correos admin **solo pueden leer**, no escribir en el perfil de otro asesor — y un asesor común sigue sin poder leer el perfil de otro asesor bajo ninguna circunstancia. Esto se sigue enforzando en el servidor, no solo en la app. Si más adelante se suma o se quita un administrador, es solo agregar/quitar su correo de esta lista en la consola de Firebase (Firestore → Reglas) — no requiere tocar el código del sitio.
+Notá que los correos admin **solo pueden leer**, no escribir en el perfil de otro asesor — y un asesor común sigue sin poder leer el perfil COMPLETO de otro asesor (con su correo, ciudad, etc.) bajo ninguna circunstancia. Esto se sigue enforzando en el servidor, no solo en la app.
+
+Agregué una segunda colección, `ranking_publico`, que sí puede leer **cualquier asesor logueado** — pero solo contiene los datos mínimos para el ranking (nombre, foto, ciudad, XP, cantidad de módulos), nunca el correo. Cada vez que se guarda el progreso de un asesor, el sitio escribe automáticamente esa copia reducida ahí — es la que alimenta el podio de la pantalla de Progreso.
+
+Si más adelante se suma o se quita un administrador, es solo agregar/quitar su correo de la lista en la consola de Firebase (Firestore → Reglas) — no requiere tocar el código del sitio. **Si ya tenías la regla anterior publicada, tenés que reemplazarla completa por esta** (que ya incluye el bloque de `ranking_publico`) y volver a publicar.
 
 ### B.6 — Panel de estadísticas para los administradores
 

@@ -17,29 +17,30 @@
     <!-- Pantalla 0: splash -->
     <section class="onb-splash" data-screen="0">
       <img src="assets/img/logo-ciles.png" alt="CILES · Presente en el futuro" class="brand-logo brand-logo-lg">
+      <img src="assets/img/breiki.png" alt="Breiki" class="mascot mascot-md" style="margin-top:-6px;">
       <div>
         <div class="app-eyebrow">CILES PRO</div>
         <h1 class="app-h1">Vendedores</h1>
-        <p class="app-lede">Aprende el oficio eléctrico de verdad y véndelo con seguridad, un módulo a la vez.</p>
+        <p class="app-lede">Soy Breiki — aprende el oficio eléctrico de verdad y véndelo con seguridad, un módulo a la vez.</p>
       </div>
       <button class="app-btn app-btn-primary" style="margin-top:10px;" onclick="irA(1)">Comenzar →</button>
     </section>
 
     <!-- Pantallas 1-3: carrusel -->
     <section class="onb-slide" data-screen="1" hidden>
-      <div class="blob-icon size-xl" id="slide1-icon"></div>
+      <img src="assets/img/breiki.png" alt="Breiki" class="mascot mascot-lg">
       <h2 class="app-h2" style="margin-top:24px;">Micro-lecciones que se ven en un momento</h2>
-      <p class="app-lede">Video corto + práctica + infografía de repaso, con un guía que te enseña el oficio de verdad: paso a paso y con los secretos que no se cuentan en cualquier lado.</p>
+      <p class="app-lede">Video corto + práctica + infografía de repaso, con Breiki como guía que te enseña el oficio de verdad: paso a paso y con los secretos que no se cuentan en cualquier lado.</p>
     </section>
 
     <section class="onb-slide" data-screen="2" hidden>
-      <div class="blob-icon size-xl" id="slide2-icon"></div>
+      <img src="assets/img/breiki.png" alt="Breiki" class="mascot mascot-lg">
       <h2 class="app-h2" style="margin-top:24px;">Construye tu casa CILES</h2>
       <p class="app-lede">Cada módulo que completas instala un producto real en tu casa virtual — rachas, XP y niveles que se desbloquean, como en tus apps favoritas.</p>
     </section>
 
     <section class="onb-slide" data-screen="3" hidden>
-      <div class="blob-icon size-xl" id="slide3-icon"></div>
+      <img src="assets/img/breiki.png" alt="Breiki" class="mascot mascot-lg">
       <h2 class="app-h2" style="margin-top:24px;">Doble recompensa</h2>
       <p class="app-lede">Si eres del equipo interno: ranking e incentivos por XP. Si eres aliado de ferretería o distribuidor: una certificación visible que puedes mostrarle al cliente.</p>
     </section>
@@ -185,9 +186,6 @@ function finalizarOnboarding(){
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  document.getElementById("slide1-icon").innerHTML = blobIcon("herramientas","teal");
-  document.getElementById("slide2-icon").innerHTML = blobIcon("tablero","purple");
-  document.getElementById("slide3-icon").innerHTML = blobIcon("certificado","gold");
   pintarGoals();
   // Si ya hay sesión de Google y el perfil está completo, saltar directo a home
   await esperarAuthVendedor();

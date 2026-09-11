@@ -33,7 +33,15 @@
       </div>
     </div>
 
-    <div id="niveles-detalle" style="margin-top:20px;"></div>
+    <div style="margin-top:26px;">
+      <h2 class="app-h2">Ranking CILES Pro</h2>
+      <p class="app-lede">Así vas frente a los demás asesores, por XP acumulado.</p>
+      <div class="app-card" style="margin-top:12px;" id="ranking-card">
+        <p class="app-muted" style="text-align:center;">Cargando ranking…</p>
+      </div>
+    </div>
+
+    <div id="niveles-detalle" style="margin-top:26px;"></div>
 
   </div>
   <div id="tabbar-slot"></div>
@@ -85,7 +93,59 @@ document.addEventListener("DOMContentLoaded", async () => {
       </div>
     </div>`;
   }).join("");
+
+  cargarRanking();
 });
+
+async function cargarRanking(){
+  const cont = document.getElementById("ranking-card");
+  try{
+    const miUid = fbAuth.currentUser ? fbAuth.currentUser.uid : null;
+    const snap = await fbDb.collection("ranking_publico").get();
+    const todos = snap.docs.map(d => ({ uid:d.id, ...d.data() })).sort((a,b) => (b.xp||0) - (a.xp||0));
+
+    if(!todos.length){ cont.innerHTML = `<p class="app-muted" style="text-align:center;">Todavía no hay suficientes asesores para armar el ranking.</p>`; return; }
+
+    const top3 = todos.slice(0,3);
+    const ordenPodio = [1,0,2].filter(i => top3[i]); // 2° - 1° - 3°, como en un podio real
+    const podioHTML = ordenPodio.map(i => {
+      const v = top3[i]; const puesto = i+1;
+      const avatar = v.foto ? `<img src="${v.foto}" alt="">` : iniciales(v.nombre);
+      return `<div class="podio-puesto p${puesto}">
+        <div class="podio-avatar ${v.uid===miUid?"podio-tu":""}">${avatar}</div>
+        <div class="podio-nombre">${(v.nombre||"—").split(" ")[0]}${v.uid===miUid?" (tú)":""}</div>
+        <div class="podio-xp">${v.xp||0} XP</div>
+        <div class="podio-stand">${puesto}</div>
+      </div>`;
+    }).join("");
+
+    // Del puesto 4 al 10 se muestran en lista; si el usuario queda más abajo, se agrega aparte al final.
+    const restoVisible = todos.slice(3, 10);
+    const restoHTML = restoVisible.map((v,i) => `
+      <div class="nivel-row" style="margin-top:10px;${v.uid===miUid?" border-color:var(--orange-500); border-width:1.5px;":""}">
+        <div class="nivel-row-badge acc-teal-bg" style="width:36px;height:36px;font-size:12px;">${i+4}</div>
+        <div style="flex:1;">
+          <div style="font-weight:800; font-size:13px; color:var(--navy-950);">${v.nombre||"—"}${v.uid===miUid?" (tú)":""}</div>
+          <div class="app-muted">${v.ciudad||"Sin ciudad"}</div>
+        </div>
+        <div class="app-muted" style="font-weight:700;">${v.xp||0} XP</div>
+      </div>`).join("");
+
+    const miPosicion = todos.findIndex(v => v.uid === miUid);
+    const yaVisible = miPosicion >= 0 && miPosicion < 10;
+    const miFilaHTML = (miPosicion >= 0 && !yaVisible) ? `
+      <div class="nivel-row" style="margin-top:10px; border-color:var(--orange-500); border-width:1.5px;">
+        <div class="nivel-row-badge acc-gold-bg" style="width:36px;height:36px;font-size:12px;">${miPosicion+1}</div>
+        <div style="flex:1;"><div style="font-weight:800; font-size:13px; color:var(--navy-950);">${todos[miPosicion].nombre} (tú)</div></div>
+        <div class="app-muted" style="font-weight:700;">${todos[miPosicion].xp||0} XP</div>
+      </div>` : "";
+
+    cont.innerHTML = `<div class="podio">${podioHTML}</div>${restoHTML}${miFilaHTML}`;
+  }catch(err){
+    console.error(err);
+    cont.innerHTML = `<p class="app-muted" style="text-align:center;">No se pudo cargar el ranking.</p>`;
+  }
+}
 </script>
 </body>
 </html>
