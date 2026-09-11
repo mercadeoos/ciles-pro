@@ -22,10 +22,24 @@
 }
 
 /* ---------- Breiki (mascota de marca) ---------- */
-.mascot{ display:block; margin:0 auto; width:auto; }
+.mascot{
+  display:block; margin:0 auto; width:auto;
+  animation:mascotFloat 3.4s ease-in-out infinite;
+  transform-origin:50% 85%;
+}
 .mascot-sm{ max-width:64px; }
 .mascot-md{ max-width:110px; }
 .mascot-lg{ max-width:160px; }
+.mascot-sm{ animation-duration:3s; }
+.mascot-lg{ animation-duration:3.8s; }
+
+@keyframes mascotFloat{
+  0%, 100%{ transform:translateY(0) rotate(-2.5deg); }
+  50%{ transform:translateY(-9px) rotate(2.5deg); }
+}
+@media (prefers-reduced-motion: reduce){
+  .mascot{ animation:none; }
+}
 .mascot-bubble{
   background:#fff; border-radius:18px; padding:12px 16px; position:relative;
   font-size:13.5px; font-weight:700; color:var(--navy-950); box-shadow:0 4px 14px rgba(20,27,82,.08);
@@ -375,14 +389,45 @@
 .cat-chevron{ color:var(--ink-faint); flex-shrink:0; transition:transform .2s ease; }
 .cat-card.open .cat-chevron{ transform:rotate(90deg); }
 .cat-card-body{
-  max-height:0; overflow:hidden; transition:max-height .25s ease;
+  max-height:0; overflow:hidden; transition:max-height .3s ease;
 }
-.cat-card.open .cat-card-body{ max-height:1400px; }
+.cat-card.open .cat-card-body{ max-height:2200px; }
 .cat-card-body-inner{ padding-top:16px; }
 .cat-sec{ margin-top:12px; }
 .cat-sec:first-child{ margin-top:0; }
 .cat-sec-label{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--acc-teal); }
 .cat-sec-text{ font-size:13.5px; color:var(--ink-soft); line-height:1.5; margin-top:4px; }
+
+.cat-img-wrap{
+  position:relative; cursor:zoom-in; border-radius:16px; overflow:hidden;
+  background:var(--app-bg); min-height:150px; display:flex; align-items:center; justify-content:center;
+}
+.cat-img{ display:block; width:100%; height:auto; opacity:0; transition:opacity .3s ease; }
+.cat-img.loaded{ opacity:1; }
+.cat-img-wrap::before{
+  content:"Cargando ficha…"; position:absolute; font-size:12px; color:var(--ink-faint); font-weight:700;
+}
+.cat-img-wrap:has(.cat-img.loaded)::before{ content:none; }
+.cat-img-zoom{
+  position:absolute; right:8px; bottom:8px; display:flex; align-items:center; gap:4px;
+  background:rgba(0,20,137,.75); color:#fff; font-size:11px; font-weight:700;
+  padding:5px 9px; border-radius:999px; pointer-events:none;
+}
+
+.cat-lightbox{
+  position:fixed; inset:0; background:rgba(0,10,60,.9); z-index:200;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.cat-lightbox[hidden]{ display:none !important; }
+.cat-lightbox-body{ max-width:100%; max-height:100%; overflow:auto; border-radius:12px; }
+.cat-lightbox-body img{ display:block; width:100%; height:auto; border-radius:12px; }
+.cat-lightbox-loading{ color:#fff; font-weight:700; padding:40px; }
+.cat-lightbox-close{
+  position:fixed; top:18px; right:18px; width:40px; height:40px; border-radius:50%;
+  background:rgba(255,255,255,.15); color:#fff; display:flex; align-items:center; justify-content:center;
+  border:none; cursor:pointer;
+}
+.cat-lightbox-close:hover{ background:rgba(255,255,255,.28); }
 
 /* =========================================================
    Escritorio real (≥900px) — deja de simular un teléfono:

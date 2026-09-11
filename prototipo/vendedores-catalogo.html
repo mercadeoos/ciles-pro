@@ -17,7 +17,7 @@
     <a href="vendedores-perfil.html" class="app-muted" style="font-weight:700;">← Perfil</a>
     <span class="app-eyebrow" style="display:block; margin-top:14px;">Recurso de consulta</span>
     <h1 class="app-h1">Catálogo CILES</h1>
-    <p class="app-lede">La cartilla del vendedor, a la mano: normas, características y dónde usar cada producto — para responderle al cliente sin dudar.</p>
+    <p class="app-lede">La cartilla del vendedor, tal cual — con la ficha técnica y las fotos de cada producto. Toca una tarjeta para abrirla y toca la imagen para ampliarla.</p>
 
     <input id="buscar" class="app-input" style="margin-top:16px;" placeholder="Buscar producto…">
     <div id="filtro-cat" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;"></div>
@@ -29,6 +29,12 @@
 </div>
 </div>
 
+<div class="cat-lightbox" id="lightbox" hidden>
+  <button class="cat-lightbox-close" id="lightbox-close" aria-label="Cerrar"></button>
+  <div class="cat-lightbox-body" id="lightbox-body"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="assets/js/cartilla-vendedores.js"></script>
 <script src="assets/js/iconos.js"></script>
 <script src="assets/js/main.js"></script>
@@ -38,6 +44,8 @@
 <script src="assets/js/firebase-vendedor.js"></script>
 <script src="assets/js/app-vendedor.js"></script>
 <script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
 const CAT_ICONO = {
   "Breakers":["proteccion","coral"], "Tableros":["tablero","teal"], "Cajas y protección":["proteccion","purple"],
   "Suichería":["interruptor","gold"], "Sensores y detectores":["sensor","coral"], "Plafones":["bombilla","gold"],
@@ -54,9 +62,55 @@ const SECCIONES = [
 ];
 
 let abierto = null;
+let pdfCartilla = null;
+const cachePaginas = {}; // pagina -> dataURL
+
+function getPdfCartilla(){
+  if(!pdfCartilla) pdfCartilla = pdfjsLib.getDocument("assets/docs/cartilla-vendedor.pdf").promise;
+  return pdfCartilla;
+}
+
+async function renderPaginaCartilla(pagina, escala){
+  const key = pagina + "@" + escala;
+  if(cachePaginas[key]) return cachePaginas[key];
+  const pdf = await getPdfCartilla();
+  const page = await pdf.getPage(pagina);
+  const viewport = page.getViewport({scale: escala});
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({canvasContext: canvas.getContext("2d"), viewport}).promise;
+  const dataUrl = canvas.toDataURL("image/png");
+  cachePaginas[key] = dataUrl;
+  return dataUrl;
+}
+
+function cargarImagenTarjeta(idx, pagina){
+  const img = document.querySelector(`.cat-img[data-idx="${idx}"]`);
+  if(!img || img.dataset.cargada) return;
+  img.dataset.cargada = "1";
+  renderPaginaCartilla(pagina, 1.4).then(url => { img.src = url; img.classList.add("loaded"); });
+}
+
+function abrirLightbox(pagina){
+  const body = document.getElementById("lightbox-body");
+  body.innerHTML = `<div class="cat-lightbox-loading">Cargando ficha…</div>`;
+  document.getElementById("lightbox").hidden = false;
+  document.body.style.overflow = "hidden";
+  renderPaginaCartilla(pagina, 2.6).then(url => {
+    body.innerHTML = `<img src="${url}" alt="Ficha técnica CILES">`;
+  });
+}
+
+function cerrarLightbox(){
+  document.getElementById("lightbox").hidden = true;
+  document.body.style.overflow = "";
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(await requiereOnboardingVendedor()) return;
+
+  document.getElementById("lightbox-close").innerHTML = uiIcon("cerrar", 22);
 
   let catActiva = "todas";
   const cats = ["todas", ...Array.from(new Set(CARTILLA_VENDEDOR.map(p => p.cat)))];
@@ -72,12 +126,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       return matchCat && matchTexto;
     });
 
-    document.getElementById("lista").innerHTML = filtrados.map((p, i) => {
+    document.getElementById("lista").innerHTML = filtrados.map((p) => {
       const [tipo, color] = CAT_ICONO[p.cat] || ["tablero", "navy"];
       const idx = CARTILLA_VENDEDOR.indexOf(p);
       const secciones = SECCIONES.filter(s => p[s.key]);
       return `
-      <div class="app-card cat-card${abierto === idx ? " open" : ""}" data-idx="${idx}" style="margin-top:10px;">
+      <div class="app-card cat-card${abierto === idx ? " open" : ""}" data-idx="${idx}" data-pagina="${p.pagina}" style="margin-top:10px;">
         <div class="cat-card-head">
           <span class="blob-icon size-sm">${blobIcon(tipo, color)}</span>
           <div style="flex:1;">
@@ -88,6 +142,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
         <div class="cat-card-body">
           <div class="cat-card-body-inner">
+            <div class="cat-img-wrap" data-idx="${idx}">
+              <img class="cat-img" data-idx="${idx}" alt="Ficha técnica: ${p.nombre}">
+              <span class="cat-img-zoom">${uiIcon("buscar", 16)} Ampliar</span>
+            </div>
             ${secciones.map(s => `
               <div class="cat-sec">
                 <div class="cat-sec-label">${s.label}</div>
@@ -99,6 +157,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }).join("");
 
     document.getElementById("sin-resultados").classList.toggle("hidden", filtrados.length > 0);
+
+    if(abierto !== null){
+      const abiertoData = CARTILLA_VENDEDOR[abierto];
+      if(abiertoData) cargarImagenTarjeta(abierto, abiertoData.pagina);
+    }
   }
 
   document.getElementById("buscar").addEventListener("input", render);
@@ -114,11 +177,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("lista").addEventListener("click", e => {
+    const imgWrap = e.target.closest(".cat-img-wrap");
+    if(imgWrap){
+      const idx = Number(imgWrap.dataset.idx);
+      const p = CARTILLA_VENDEDOR[idx];
+      if(p) abrirLightbox(p.pagina);
+      return;
+    }
     const card = e.target.closest(".cat-card");
     if (!card) return;
     const idx = Number(card.dataset.idx);
     abierto = abierto === idx ? null : idx;
     render();
+  });
+
+  document.getElementById("lightbox").addEventListener("click", e => {
+    if(e.target.id === "lightbox" || e.target.closest("#lightbox-close")) cerrarLightbox();
   });
 
   render();
