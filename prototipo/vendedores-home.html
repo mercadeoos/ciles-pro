@@ -26,11 +26,14 @@
     </div>
 
     <div class="streak-card" style="margin-top:18px;">
-      <div class="streak-flame">🔥</div>
-      <div>
-        <div class="streak-n"><span id="racha-n">1</span> día<span id="racha-plural"></span> de racha</div>
-        <div class="streak-l"><span id="xp-total">0</span> XP acumulados de <span id="xp-programa"></span></div>
+      <div class="app-row">
+        <div class="streak-flame" id="ic-flama"></div>
+        <div>
+          <div class="streak-n"><span id="racha-n">1</span> día<span id="racha-plural"></span> de racha</div>
+          <div class="streak-l"><span id="xp-total">0</span> XP acumulados de <span id="xp-programa"></span></div>
+        </div>
       </div>
+      <div id="racha-semana"></div>
     </div>
 
     <div id="hoy-toca"></div>
@@ -78,6 +81,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("racha-plural").textContent = e.racha === 1 ? "" : "s";
   document.getElementById("xp-total").textContent = e.xp.toLocaleString("es-CO");
   document.getElementById("xp-programa").textContent = PROGRAMA_VENDEDORES.xpTotal.toLocaleString("es-CO") + " XP";
+  document.getElementById("ic-flama").innerHTML = uiIcon("flama", 30);
+  document.getElementById("racha-semana").innerHTML = rachaSemanaHTML(e);
 
   const siguiente = siguienteModuloVendedorPendiente();
   const hoyToca = document.getElementById("hoy-toca");
@@ -97,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     hoyToca.innerHTML = `
       <div class="app-card app-card-navy" style="margin-top:16px; text-align:center;">
-        <div style="font-size:34px;">🏆</div>
+        <div style="width:36px; height:36px; margin:0 auto; color:var(--orange-400);">${uiIcon("trofeo", 36)}</div>
         <div style="font-weight:800; margin-top:6px;">¡Completaste el programa CILES Pro!</div>
         <div class="app-muted" style="color:rgba(255,255,255,.75); margin-top:4px;">Certificación "Vendedor CILES Pro" desbloqueada.</div>
       </div>`;

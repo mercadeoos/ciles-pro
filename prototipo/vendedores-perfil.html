@@ -66,7 +66,7 @@
     </div>
 
     <div style="margin-top:24px; display:flex; flex-direction:column; gap:10px;">
-      <button class="app-btn app-btn-outline" onclick="cerrarSesionVendedor()">Cerrar sesión</button>
+      <button class="app-btn app-btn-outline" style="display:flex; align-items:center; justify-content:center; gap:8px;" onclick="cerrarSesionVendedor()"><span id="ic-salir" style="width:18px; height:18px; display:flex;"></span>Cerrar sesión</button>
       <a href="index.html" class="app-btn app-btn-ghost">← Volver al sitio CILES PRO</a>
     </div>
 
@@ -105,6 +105,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("stat-racha").textContent = e.racha;
 
   document.getElementById("ic-diccionario").innerHTML = blobIcon("plano", "gold");
+  document.getElementById("ic-salir").innerHTML = uiIcon("salir", 18);
 
   if(esAdminCilesPro(e.email)){
     document.getElementById("admin-link-wrap").hidden = false;

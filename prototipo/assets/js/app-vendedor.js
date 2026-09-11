@@ -13,6 +13,7 @@ function estadoVendedorPorDefecto(){
     xp:0,
     racha:1,
     ultimaVisita:new Date().toISOString().slice(0,10),
+    historialVisitas:[],  // fechas ISO (YYYY-MM-DD) de los últimos días con actividad
   };
 }
 
@@ -43,12 +44,19 @@ function setEstadoVendedor(estado){
  * datos de perfil (ciudad/objetivo). Usar siempre con await.
  */
 async function requiereOnboardingVendedor(){
+  mostrarCargaVendedor();
   if(typeof esperarAuthVendedor === "function"){
     const user = await esperarAuthVendedor();
     if(!user){ location.href = "vendedores-onboarding.html"; return true; }
   }
   const e = getEstadoVendedor();
   if(!e.registrado) { location.href = "vendedores-onboarding.html"; return true; }
+  const hoy = new Date().toISOString().slice(0,10);
+  if(!(e.historialVisitas || []).includes(hoy)){
+    registrarVisitaHoy(e);
+    setEstadoVendedor(e);
+  }
+  ocultarCargaVendedor();
   return false;
 }
 
@@ -95,15 +103,74 @@ function iniciales(nombre){
 /* Barra de pestañas inferior compartida por las pantallas del track Vendedores */
 function renderTabbarVendedor(activo){
   const tabs = [
-    {href:"vendedores-home.html", key:"inicio", ic:"🏠", label:"Inicio"},
-    {href:"vendedores-casa.html", key:"casa", ic:"🏗️", label:"Mi casa"},
-    {href:"vendedores-progreso.html", key:"progreso", ic:"📊", label:"Progreso"},
-    {href:"vendedores-perfil.html", key:"perfil", ic:"👤", label:"Perfil"},
+    {href:"vendedores-home.html", key:"inicio", ic:"inicio", label:"Inicio"},
+    {href:"vendedores-casa.html", key:"casa", ic:"casa", label:"Mi casa"},
+    {href:"vendedores-progreso.html", key:"progreso", ic:"progreso", label:"Progreso"},
+    {href:"vendedores-perfil.html", key:"perfil", ic:"perfil", label:"Perfil"},
   ];
   return `<nav class="tabbar">
     <div class="tabbar-brand"><img src="assets/img/logo-ciles.png" alt="CILES · Presente en el futuro"></div>
     ${tabs.map(t => `
     <a href="${t.href}" class="${t.key===activo?"active":""}">
-      <span class="tab-ic">${t.ic}</span><span>${t.label}</span>
+      <span class="tab-ic">${uiIcon(t.ic, 21)}</span><span>${t.label}</span>
     </a>`).join("")}</nav>`;
+}
+
+/* ---------- Pantalla de carga con marca (mientras se resuelve la sesión) ---------- */
+function mostrarCargaVendedor(){
+  if(document.getElementById("app-loading")) return;
+  const div = document.createElement("div");
+  div.id = "app-loading";
+  div.className = "app-loading";
+  div.innerHTML = `<img src="assets/img/logo-ciles-icono.png" alt="" class="app-loading-logo"><div class="app-loading-ring"></div>`;
+  document.body.appendChild(div);
+}
+function ocultarCargaVendedor(){
+  const el = document.getElementById("app-loading");
+  if(el) el.remove();
+}
+
+/* ---------- Confeti (celebración al completar un módulo) ---------- */
+function lanzarConfeti(contenedor){
+  const colores = ["#f5821f", "#001489", "#2fb6a8", "#e8a939", "#ef6f6c"];
+  for(let i = 0; i < 26; i++){
+    const p = document.createElement("span");
+    p.className = "confetti-piece";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.background = colores[i % colores.length];
+    p.style.animationDuration = (0.9 + Math.random() * 0.6) + "s";
+    p.style.animationDelay = (Math.random() * 0.3) + "s";
+    p.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+    contenedor.appendChild(p);
+  }
+}
+
+/* ---------- Racha semanal (últimos 7 días de actividad, estilo Duolingo) ---------- */
+function registrarVisitaHoy(estado){
+  const hoy = new Date().toISOString().slice(0,10);
+  const hist = Array.isArray(estado.historialVisitas) ? estado.historialVisitas.slice() : [];
+  if(!hist.includes(hoy)){
+    hist.push(hoy);
+    estado.historialVisitas = hist.slice(-30);
+  }
+  return estado;
+}
+
+function rachaSemanaHTML(estado){
+  const hist = new Set(estado.historialVisitas || []);
+  const dias = ["D","L","M","M","J","V","S"];
+  const hoy = new Date();
+  const celdas = [];
+  for(let i = 6; i >= 0; i--){
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() - i);
+    const iso = d.toISOString().slice(0,10);
+    const activo = hist.has(iso);
+    const esHoy = i === 0;
+    celdas.push(`<div class="streak-day ${activo?"on":""} ${esHoy?"today":""}">
+      <span class="streak-day-label">${dias[d.getDay()]}</span>
+      <span class="streak-day-dot">${activo ? uiIcon("flama", 14) : ""}</span>
+    </div>`);
+  }
+  return `<div class="streak-week">${celdas.join("")}</div>`;
 }

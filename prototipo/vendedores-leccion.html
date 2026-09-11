@@ -66,7 +66,7 @@ function render(){
   if(p.capsula){
     cuerpo = `<div class="lesson-kicker">${p.kicker}</div>
       <div class="media-placeholder video" style="margin-top:14px;">
-        <span class="mp-icon">▶️</span>
+        <span class="mp-icon">${uiIcon("play",30)}</span>
         <span class="mp-label">Cápsula · ${modulo.duracion}</span>
         <span class="mp-sub">Espacio reservado para el video corto del oficio</span>
       </div>
@@ -75,14 +75,14 @@ function render(){
     const inf = modulo.infografia;
     cuerpo = `<div class="lesson-kicker">${p.kicker}</div>
       <div class="media-placeholder image" style="margin-top:14px;">
-        <span class="mp-icon">🖼️</span>
+        <span class="mp-icon">${uiIcon("imagen",30)}</span>
         <span class="mp-label">${inf.titulo}</span>
         <span class="mp-sub">Espacio reservado para la imagen de repaso</span>
       </div>
       <ul style="margin-top:14px; padding-left:18px; font-size:14px; color:var(--navy-950); line-height:1.6;">
         ${inf.puntos.map(pt => `<li>${pt}</li>`).join("")}
       </ul>
-      <div class="lesson-tip" style="margin-top:14px;"><span>💡</span><span>${inf.tip}</span></div>`;
+      <div class="lesson-tip" style="margin-top:14px;"><span style="width:18px;flex-shrink:0;color:#a9791b;">${uiIcon("foco",18)}</span><span>${inf.tip}</span></div>`;
   } else if(p.examen){
     cuerpo = renderExamenCuerpo();
     disabledBtn = !examTerminado && !examRespondida;
@@ -92,13 +92,13 @@ function render(){
       <p class="lesson-text ${p.quote?"quote":""}">${p.key(modulo)}</p>`;
     if(p.tip){
       cuerpo = `<div class="lesson-kicker">${p.kicker}</div>
-        <div class="lesson-tip"><span>💡</span><span>${p.key(modulo)}</span></div>`;
+        <div class="lesson-tip"><span style="width:18px;flex-shrink:0;color:#a9791b;">${uiIcon("foco",18)}</span><span>${p.key(modulo)}</span></div>`;
     }
   }
 
   document.getElementById("lesson-root").innerHTML = `
     <div class="lesson-topbar">
-      <button class="lesson-close" onclick="location.href='vendedores-home.html'">✕</button>
+      <button class="lesson-close" onclick="location.href='vendedores-home.html'">${uiIcon("cerrar",20)}</button>
       <div class="lesson-progress">${bars}</div>
     </div>
     <div class="app-eyebrow" style="margin-top:14px;">${modulo.id} · ${modulo.nombre}</div>
@@ -140,8 +140,8 @@ function responder(i){
     else if(idx === i) btn.classList.add("wrong");
   });
   document.getElementById("quiz-feedback").innerHTML = i === correcta
-    ? `<div class="lesson-tip" style="margin-top:14px;"><span>✅</span><span>¡Correcto!</span></div>`
-    : `<div class="lesson-tip" style="margin-top:14px; background:var(--acc-coral-soft); color:#7a2e2c;"><span>❌</span><span>La opción correcta era: ${q.o[correcta]}</span></div>`;
+    ? `<div class="lesson-tip" style="margin-top:14px; background:#e7f6ec; color:#1c6b3a;"><span style="width:18px;flex-shrink:0;color:var(--success);">${uiIcon("check",18)}</span><span>¡Correcto!</span></div>`
+    : `<div class="lesson-tip" style="margin-top:14px; background:var(--acc-coral-soft); color:#7a2e2c;"><span style="width:18px;flex-shrink:0;color:var(--acc-coral);">${uiIcon("equis",18)}</span><span>La opción correcta era: ${q.o[correcta]}</span></div>`;
   document.getElementById("btn-siguiente").disabled = false;
 }
 
@@ -172,6 +172,7 @@ function mostrarRecompensa(){
       <button class="app-btn app-btn-primary" style="margin-top:10px;" onclick="continuar()">Continuar</button>
       <a href="vendedores-casa.html" class="app-btn app-btn-ghost">Ver mi casa CILES →</a>
     </div>`;
+  lanzarConfeti(root.querySelector(".reward-screen"));
   marcarModuloVendedorCompletado(modulo.id, modulo.gamificacion.xp);
 }
 
