@@ -17,7 +17,7 @@
     <a href="vendedores-perfil.html" class="app-muted" style="font-weight:700;">← Perfil</a>
     <span class="app-eyebrow" style="display:block; margin-top:14px;">Recurso de consulta</span>
     <h1 class="app-h1">Catálogo CILES</h1>
-    <p class="app-lede">La cartilla del vendedor, tal cual. Toca un producto para ver su ficha y navega entre productos con las flechas.</p>
+    <p class="app-lede">Toca un producto: mira su ficha y toca las pestañas para ver normas, características, dónde usarlo y más.</p>
 
     <input id="buscar" class="app-input" style="margin-top:16px;" placeholder="Buscar producto…">
     <div id="filtro-cat" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;"></div>
@@ -37,11 +37,24 @@
       <span class="cat-viewer-count" id="viewer-count"></span>
     </div>
   </div>
-  <div class="cat-viewer-body" id="viewer-body"></div>
+  <div class="cat-viewer-scroll" id="viewer-scroll">
+    <h2 class="cat-viewer-title" id="viewer-title"></h2>
+    <div class="cat-thumb-wrap" id="viewer-thumb-wrap">
+      <img class="cat-thumb" id="viewer-thumb" alt="">
+      <span class="cat-img-zoom">Ampliar</span>
+    </div>
+    <div class="cat-tabs" id="viewer-tabs"></div>
+    <div class="cat-tab-content" id="viewer-tab-content"></div>
+  </div>
   <div class="cat-viewer-nav">
     <button class="cat-viewer-nav-btn" id="viewer-prev"></button>
     <button class="cat-viewer-nav-btn" id="viewer-next"></button>
   </div>
+</div>
+
+<div class="cat-lightbox" id="lightbox" hidden>
+  <button class="cat-lightbox-close" id="lightbox-close" aria-label="Cerrar"></button>
+  <div class="cat-lightbox-body" id="lightbox-body"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -62,10 +75,20 @@ const CAT_ICONO = {
   "Tomacorrientes":["tomacorriente","teal"], "Conectores y accesorios":["cable","purple"],
 };
 
+const SECCIONES = [
+  {key:"normas", label:"Normas"},
+  {key:"caracteristicas", label:"Características"},
+  {key:"diferencia", label:"Nos diferencia"},
+  {key:"dondeUsarlo", label:"Dónde usarlo"},
+  {key:"tipos", label:"Tipos"},
+  {key:"tenPresente", label:"Ten presente"},
+];
+
 let pdfCartilla = null;
 const cachePaginas = {}; // "pagina@escala" -> dataURL
-let listaActual = []; // productos visibles según filtro/búsqueda (orden de navegación)
+let listaActual = [];
 let posVisor = 0;
+let tabActiva = 0;
 
 function getPdfCartilla(){
   if(!pdfCartilla) pdfCartilla = pdfjsLib.getDocument("assets/docs/cartilla-vendedor.pdf").promise;
@@ -82,14 +105,23 @@ async function renderPaginaCartilla(pagina, escala){
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   await page.render({canvasContext: canvas.getContext("2d"), viewport}).promise;
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
   cachePaginas[key] = dataUrl;
   return dataUrl;
+}
+
+function renderTabs(p){
+  const secciones = SECCIONES.filter(s => p[s.key]);
+  document.getElementById("viewer-tabs").innerHTML = secciones.map((s, i) => `
+    <button class="cat-tab${i === tabActiva ? " active" : ""}" data-i="${i}">${s.label}</button>`).join("");
+  document.getElementById("viewer-tab-content").innerHTML =
+    `<div class="cat-sec-text">${secciones[tabActiva] ? p[secciones[tabActiva].key] : ""}</div>`;
 }
 
 function mostrarEnVisor(pos){
   if(pos < 0 || pos >= listaActual.length) return;
   posVisor = pos;
+  tabActiva = 0;
   const p = listaActual[pos];
   const [, color] = CAT_ICONO[p.cat] || ["tablero", "navy"];
 
@@ -98,21 +130,22 @@ function mostrarEnVisor(pos){
   document.getElementById("viewer-count").textContent = `${pos + 1} / ${listaActual.length}`;
   document.getElementById("viewer-prev").disabled = pos === 0;
   document.getElementById("viewer-next").disabled = pos === listaActual.length - 1;
+  document.getElementById("viewer-title").textContent = p.nombre;
+  document.getElementById("viewer-scroll").scrollTop = 0;
 
-  const body = document.getElementById("viewer-body");
-  body.innerHTML = `<div class="cat-viewer-loading">Cargando ficha…</div>`;
-  body.scrollTop = 0;
-  const paginaPedida = p.pagina;
-  renderPaginaCartilla(paginaPedida, 2.2).then(url => {
-    if(listaActual[posVisor] !== p) return; // el usuario ya navegó a otra
-    body.innerHTML = `<img src="${url}" alt="Ficha técnica: ${p.nombre}">`;
-  }).catch(() => {
-    body.innerHTML = `<p class="app-muted" style="color:#fff; text-align:center; padding:30px;">No se pudo cargar la ficha. Verifica tu conexión e intenta de nuevo.</p>`;
+  renderTabs(p);
+
+  const thumb = document.getElementById("viewer-thumb");
+  thumb.classList.remove("loaded");
+  thumb.removeAttribute("src");
+  renderPaginaCartilla(p.pagina, 1.1).then(url => {
+    if(listaActual[posVisor] !== p) return;
+    thumb.src = url;
+    thumb.classList.add("loaded");
   });
 
-  // precarga silenciosa de la siguiente ficha para navegar sin espera
   const sig = listaActual[pos + 1];
-  if(sig) renderPaginaCartilla(sig.pagina, 2.2).catch(() => {});
+  if(sig) renderPaginaCartilla(sig.pagina, 1.1).catch(() => {});
 }
 
 function abrirVisor(lista, pos){
@@ -127,12 +160,29 @@ function cerrarVisor(){
   document.body.style.overflow = "";
 }
 
+function abrirLightbox(pagina, nombre){
+  const body = document.getElementById("lightbox-body");
+  body.innerHTML = `<div class="cat-lightbox-loading">Cargando ficha…</div>`;
+  document.getElementById("lightbox").hidden = false;
+  renderPaginaCartilla(pagina, 2.4).then(url => {
+    body.innerHTML = `<img src="${url}" alt="Ficha técnica: ${nombre}">`;
+  }).catch(() => {
+    body.innerHTML = `<p class="app-muted" style="color:#fff; text-align:center; padding:30px;">No se pudo cargar la ficha.</p>`;
+  });
+}
+
+function cerrarLightbox(){
+  document.getElementById("lightbox").hidden = true;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   if(await requiereOnboardingVendedor()) return;
 
   document.getElementById("viewer-close").innerHTML = uiIcon("cerrar", 22);
+  document.getElementById("lightbox-close").innerHTML = uiIcon("cerrar", 22);
   document.getElementById("viewer-prev").innerHTML = uiIcon("chevron", 16).replace('d="m9 6 6 6-6 6"', 'd="m15 6-6 6 6 6"') + " Anterior";
   document.getElementById("viewer-next").innerHTML = "Siguiente " + uiIcon("chevron", 16);
+  document.querySelector("#viewer-thumb-wrap .cat-img-zoom").innerHTML = uiIcon("buscar", 14) + " Ampliar";
 
   let catActiva = "todas";
   const cats = ["todas", ...Array.from(new Set(CARTILLA_VENDEDOR.map(p => p.cat)))];
@@ -193,21 +243,43 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("viewer-close").addEventListener("click", cerrarVisor);
   document.getElementById("viewer-prev").addEventListener("click", () => mostrarEnVisor(posVisor - 1));
   document.getElementById("viewer-next").addEventListener("click", () => mostrarEnVisor(posVisor + 1));
+
+  document.getElementById("viewer-tabs").addEventListener("click", e => {
+    const tab = e.target.closest(".cat-tab");
+    if(!tab) return;
+    tabActiva = Number(tab.dataset.i);
+    renderTabs(listaActual[posVisor]);
+  });
+
+  document.getElementById("viewer-thumb-wrap").addEventListener("click", () => {
+    const p = listaActual[posVisor];
+    if(p) abrirLightbox(p.pagina, p.nombre);
+  });
+
+  document.getElementById("lightbox-close").addEventListener("click", cerrarLightbox);
+  document.getElementById("lightbox").addEventListener("click", e => {
+    if(e.target.id === "lightbox") cerrarLightbox();
+  });
+
   document.addEventListener("keydown", e => {
+    if(!document.getElementById("lightbox").hidden){
+      if(e.key === "Escape") cerrarLightbox();
+      return;
+    }
     if(document.getElementById("viewer").hidden) return;
     if(e.key === "Escape") cerrarVisor();
     if(e.key === "ArrowLeft") mostrarEnVisor(posVisor - 1);
     if(e.key === "ArrowRight") mostrarEnVisor(posVisor + 1);
   });
 
-  // swipe táctil sobre la imagen para navegar entre productos
+  // swipe táctil sobre la ficha para navegar entre productos
   let touchX = null;
-  const viewerBody = document.getElementById("viewer-body");
-  viewerBody.addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, {passive:true});
-  viewerBody.addEventListener("touchend", e => {
+  const viewerScroll = document.getElementById("viewer-scroll");
+  viewerScroll.addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, {passive:true});
+  viewerScroll.addEventListener("touchend", e => {
     if(touchX === null) return;
     const delta = e.changedTouches[0].clientX - touchX;
-    if(Math.abs(delta) > 60) mostrarEnVisor(posVisor + (delta < 0 ? 1 : -1));
+    if(Math.abs(delta) > 70) mostrarEnVisor(posVisor + (delta < 0 ? 1 : -1));
     touchX = null;
   }, {passive:true});
 
