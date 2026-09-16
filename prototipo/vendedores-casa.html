@@ -23,6 +23,13 @@
       <img src="assets/img/breiki.png" alt="Breiki" class="mascot mascot-sm" style="flex-shrink:0;">
     </div>
 
+    <div class="app-card casa-construccion" style="margin-top:18px;">
+      <div id="casa-escena"></div>
+      <p class="casa-construccion-etapa" id="casa-etapa"></p>
+      <div class="progress-track" style="margin-top:8px;"><div class="progress-fill" id="casa-progreso-fill" style="width:0%;"></div></div>
+      <p class="app-muted" id="casa-progreso-texto" style="margin-top:6px; text-align:center;"></p>
+    </div>
+
     <div class="casa-grid-app" id="casa-grid" style="margin-top:18px;"></div>
 
     <div style="margin-top:24px;">
@@ -56,12 +63,94 @@ const ROOM_VENDEDOR = {
 };
 const ROOM_LABEL = {sala:"Sala", cocina:"Cocina", tablero:"Tablero", bano:"Baño", cuarto:"Cuarto", exterior:"Exterior"};
 
+const ETAPAS_CONSTRUCCION = [
+  {umbral:0,  titulo:"Terreno listo",        texto:"Todavía no hay nada construido — completa tu primer módulo para arrancar la obra."},
+  {umbral:1,  titulo:"Fundación en obra",     texto:"Se echaron las bases de tu casa CILES."},
+  {umbral:8,  titulo:"Levantando paredes",    texto:"La estructura empieza a tomar forma."},
+  {umbral:15, titulo:"Techo instalado",       texto:"Ya tiene techo — falta rematar los detalles."},
+  {umbral:22, titulo:"Ventanas y puerta",     texto:"Se instalaron las ventanas y la puerta principal."},
+  {umbral:29, titulo:"¡Casa terminada!",      texto:"Obra terminada y lista para mostrar."},
+];
+
+function etapaConstruccionPara(completados){
+  let idx = 0;
+  ETAPAS_CONSTRUCCION.forEach((e, i) => { if(completados >= e.umbral) idx = i; });
+  return idx;
+}
+
+/* Escena SVG de la obra: cada etapa agrega elementos sobre la anterior
+   (terreno → fundación → paredes → techo → ventanas/puerta → acabados). */
+function escenaConstruccionSVG(etapa){
+  const partes = [];
+  partes.push(`
+    <rect x="0" y="0" width="320" height="170" fill="var(--app-bg)"/>
+    <circle cx="278" cy="34" r="17" fill="var(--acc-gold-soft)"/>
+    <circle cx="278" cy="34" r="10" fill="var(--acc-gold)"/>
+    <rect x="0" y="164" width="320" height="46" fill="var(--acc-teal-soft)"/>
+  `);
+  if(etapa < 5){
+    partes.push(`<rect x="18" y="150" width="3" height="30" fill="#a9967f"/>
+      <rect x="8" y="140" width="30" height="14" rx="2" fill="#fff" stroke="var(--navy-950)" stroke-width="1.5"/>`);
+  }
+  if(etapa === 0){
+    partes.push(`<rect x="252" y="150" width="16" height="10" fill="var(--acc-coral)" rx="1"/><rect x="252" y="138" width="16" height="10" fill="var(--acc-coral)" rx="1"/>`);
+  }
+  if(etapa >= 1){
+    partes.push(`<rect x="70" y="158" width="180" height="14" rx="2" fill="#c7c4bd"/>
+      <line x1="90" y1="158" x2="90" y2="172" stroke="#aaa7a0" stroke-width="1"/>
+      <line x1="140" y1="158" x2="140" y2="172" stroke="#aaa7a0" stroke-width="1"/>
+      <line x1="190" y1="158" x2="190" y2="172" stroke="#aaa7a0" stroke-width="1"/>
+      <line x1="230" y1="158" x2="230" y2="172" stroke="#aaa7a0" stroke-width="1"/>`);
+  }
+  if(etapa >= 2){
+    const colorPuerta = etapa >= 4 ? "var(--orange-500)" : "var(--navy-950)";
+    const colorVentana = etapa >= 4 ? "#bfe0f5" : "var(--navy-950)";
+    partes.push(`<rect x="80" y="95" width="160" height="65" fill="#fbf8f2" stroke="var(--navy-950)" stroke-width="2"/>
+      <rect x="100" y="112" width="26" height="26" fill="${colorVentana}" stroke="var(--navy-950)" stroke-width="1.5"/>
+      <rect x="194" y="112" width="26" height="26" fill="${colorVentana}" stroke="var(--navy-950)" stroke-width="1.5"/>
+      <rect x="148" y="128" width="24" height="32" fill="${colorPuerta}" stroke="var(--navy-950)" stroke-width="1.5"/>`);
+    if(etapa >= 4){
+      partes.push(`<line x1="113" y1="112" x2="113" y2="138" stroke="#fff" stroke-width="1.5"/>
+        <line x1="100" y1="125" x2="126" y2="125" stroke="#fff" stroke-width="1.5"/>
+        <line x1="207" y1="112" x2="207" y2="138" stroke="#fff" stroke-width="1.5"/>
+        <line x1="194" y1="125" x2="220" y2="125" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="166" cy="146" r="1.8" fill="#fbf8f2"/>`);
+    }
+  }
+  if(etapa >= 3){
+    partes.push(`<polygon points="72,95 248,95 160,42" fill="var(--navy-950)"/>
+      <rect x="196" y="48" width="14" height="34" fill="#c7c4bd"/>
+      <rect x="194" y="44" width="18" height="7" fill="#aaa7a0"/>`);
+  }
+  if(etapa >= 5){
+    partes.push(`<rect x="78" y="93" width="164" height="4" fill="var(--orange-500)"/>
+      <path d="M148 160 L172 160 L184 174 L136 174 Z" fill="#e4e1d8"/>
+      <circle cx="272" cy="150" r="14" fill="var(--acc-teal)"/>
+      <circle cx="286" cy="158" r="9" fill="var(--acc-teal)"/>
+      <polygon points="160,42 160,24 176,32" fill="var(--acc-coral)"/>
+      <line x1="160" y1="42" x2="160" y2="22" stroke="var(--navy-950)" stroke-width="1.5"/>`);
+  } else if(etapa >= 1){
+    partes.push(`<rect x="252" y="150" width="16" height="10" fill="var(--acc-coral)" rx="1"/>`);
+  }
+  return `<svg viewBox="0 0 320 210" style="display:block; width:100%; height:auto; border-radius:16px; overflow:hidden;">${partes.join("")}</svg>`;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   if(await requiereOnboardingVendedor()) return;
   document.getElementById("tabbar-slot").innerHTML = renderTabbarVendedor("casa");
 
   const e = getEstadoVendedor();
   const todos = todosModulosVendedor();
+  const totalModulos = todos.length;
+  const hechosCount = e.completados.length;
+
+  const etapaIdx = etapaConstruccionPara(hechosCount);
+  const etapa = ETAPAS_CONSTRUCCION[etapaIdx];
+  document.getElementById("casa-escena").innerHTML = escenaConstruccionSVG(etapaIdx);
+  document.getElementById("casa-etapa").innerHTML = `<strong>${etapa.titulo}</strong> — ${etapa.texto}`;
+  const pct = Math.round((hechosCount / totalModulos) * 100);
+  document.getElementById("casa-progreso-fill").style.width = pct + "%";
+  document.getElementById("casa-progreso-texto").textContent = `${pct}% construida · ${hechosCount}/${totalModulos} módulos`;
 
   const grid = document.getElementById("casa-grid");
   grid.innerHTML = Object.keys(ROOM_LABEL).map(room => {
