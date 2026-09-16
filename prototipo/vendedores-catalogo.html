@@ -43,6 +43,7 @@
 
 <div class="cat-lightbox" id="lightbox" hidden>
   <button class="cat-lightbox-close" id="lightbox-close" aria-label="Cerrar"></button>
+  <div class="cat-lightbox-hint" id="lightbox-hint">Pellizca o usa la rueda del mouse para acercar · arrastra para mover · doble toque para restablecer</div>
   <div class="cat-lightbox-body" id="lightbox-body"></div>
 </div>
 
@@ -131,19 +132,88 @@ async function ampliarPaginaActual(){
   const body = document.getElementById("lightbox-body");
   body.innerHTML = `<div class="cat-lightbox-loading">Cargando ficha…</div>`;
   document.getElementById("lightbox").hidden = false;
+  document.getElementById("lightbox-hint").classList.remove("fade-out");
   try{
     const pdf = await pdfjsLib.getDocument("assets/docs/cartilla-vendedor.pdf").promise;
     const page = await pdf.getPage(idx);
-    const viewport = page.getViewport({scale: 2.4});
+    const viewport = page.getViewport({scale: 2.6});
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width; canvas.height = viewport.height;
     await page.render({canvasContext: canvas.getContext("2d"), viewport}).promise;
-    body.innerHTML = `<img src="${canvas.toDataURL("image/jpeg", 0.92)}" alt="Página ${idx} de la cartilla">`;
+    body.innerHTML = `<img src="${canvas.toDataURL("image/jpeg", 0.92)}" alt="Página ${idx} de la cartilla" id="lightbox-img">`;
+    iniciarZoomPan();
   }catch(e){
     body.innerHTML = `<p class="app-muted" style="color:#fff; text-align:center; padding:30px;">No se pudo ampliar la página.</p>`;
   }
 }
 function cerrarLightbox(){ document.getElementById("lightbox").hidden = true; }
+
+/* ---- Zoom + paneo real sobre la imagen ampliada: pellizcar, rueda del
+   mouse y arrastrar, para inspeccionar cualquier parte de la ficha. ---- */
+let zoomEstado = null;
+function iniciarZoomPan(){
+  const img = document.getElementById("lightbox-img");
+  if(!img) return;
+  zoomEstado = {scale:1, tx:0, ty:0, panX:0, panY:0, panActivo:false, pinchDist:0, pinchScale:1};
+  aplicarTransformZoom(img);
+
+  setTimeout(() => document.getElementById("lightbox-hint").classList.add("fade-out"), 2600);
+
+  img.onwheel = e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.2 : 1/1.2;
+    cambiarEscala(img, zoomEstado.scale * factor);
+  };
+  img.onmousedown = e => {
+    if(zoomEstado.scale <= 1) return;
+    e.preventDefault();
+    zoomEstado.panActivo = true;
+    zoomEstado.panX = e.clientX - zoomEstado.tx;
+    zoomEstado.panY = e.clientY - zoomEstado.ty;
+    img.style.cursor = "grabbing";
+  };
+  img.ondblclick = () => cambiarEscala(img, zoomEstado.scale > 1 ? 1 : 2.5);
+
+  img.ontouchstart = e => {
+    if(e.touches.length === 2){
+      zoomEstado.pinchDist = distanciaToques(e.touches);
+      zoomEstado.pinchScale = zoomEstado.scale;
+    } else if(e.touches.length === 1 && zoomEstado.scale > 1){
+      zoomEstado.panActivo = true;
+      zoomEstado.panX = e.touches[0].clientX - zoomEstado.tx;
+      zoomEstado.panY = e.touches[0].clientY - zoomEstado.ty;
+    }
+  };
+  img.ontouchmove = e => {
+    e.preventDefault();
+    if(e.touches.length === 2){
+      const dist = distanciaToques(e.touches);
+      cambiarEscala(img, zoomEstado.pinchScale * (dist / zoomEstado.pinchDist), false);
+    } else if(e.touches.length === 1 && zoomEstado.panActivo){
+      zoomEstado.tx = e.touches[0].clientX - zoomEstado.panX;
+      zoomEstado.ty = e.touches[0].clientY - zoomEstado.panY;
+      aplicarTransformZoom(img);
+    }
+  };
+  img.ontouchend = () => { zoomEstado.panActivo = false; };
+}
+
+function distanciaToques(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+function cambiarEscala(img, nuevaEscala, limitarPan){
+  zoomEstado.scale = Math.min(4, Math.max(1, nuevaEscala));
+  if(zoomEstado.scale === 1){ zoomEstado.tx = 0; zoomEstado.ty = 0; }
+  img.style.cursor = zoomEstado.scale > 1 ? "grab" : "zoom-in";
+  aplicarTransformZoom(img);
+}
+
+function aplicarTransformZoom(img){
+  img.style.transform = `translate(${zoomEstado.tx}px, ${zoomEstado.ty}px) scale(${zoomEstado.scale})`;
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(await requiereOnboardingVendedor()) return;
@@ -202,6 +272,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-zoom").addEventListener("click", ampliarPaginaActual);
   document.getElementById("lightbox-close").addEventListener("click", cerrarLightbox);
   document.getElementById("lightbox").addEventListener("click", e => { if(e.target.id === "lightbox") cerrarLightbox(); });
+  window.addEventListener("mousemove", e => {
+    if(!zoomEstado || !zoomEstado.panActivo) return;
+    const img = document.getElementById("lightbox-img");
+    if(!img) return;
+    zoomEstado.tx = e.clientX - zoomEstado.panX;
+    zoomEstado.ty = e.clientY - zoomEstado.panY;
+    aplicarTransformZoom(img);
+  });
+  window.addEventListener("mouseup", () => {
+    if(!zoomEstado) return;
+    zoomEstado.panActivo = false;
+    const img = document.getElementById("lightbox-img");
+    if(img) img.style.cursor = zoomEstado.scale > 1 ? "grab" : "zoom-in";
+  });
   document.addEventListener("keydown", e => {
     if(!document.getElementById("lightbox").hidden){ if(e.key === "Escape") cerrarLightbox(); return; }
     if(e.key === "ArrowLeft" && libro) libro.flipPrev();
