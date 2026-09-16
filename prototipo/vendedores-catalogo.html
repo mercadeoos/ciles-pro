@@ -17,13 +17,25 @@
     <a href="vendedores-perfil.html" class="app-muted" style="font-weight:700;">← Perfil</a>
     <span class="app-eyebrow" style="display:block; margin-top:14px;">Recurso de consulta</span>
     <h1 class="app-h1">Catálogo CILES</h1>
-    <p class="app-lede">Desliza entre productos, mira la ficha y toca las pestañas para ver normas, características y más.</p>
+    <p class="app-lede">La cartilla completa, como un libro: pasa la página tocando o deslizando, o busca un producto para ir directo a su ficha.</p>
 
-    <input id="buscar" class="app-input" style="margin-top:16px;" placeholder="Buscar producto…">
+    <div style="position:relative; margin-top:16px;">
+      <input id="buscar" class="app-input" placeholder="Buscar producto…" autocomplete="off">
+      <div id="resultados" class="cat-search-results hidden"></div>
+    </div>
     <div id="filtro-cat" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;"></div>
 
-    <div id="zona-tarjeta" style="margin-top:16px;"></div>
-    <p id="sin-resultados" class="app-muted hidden" style="text-align:center; margin-top:16px;">No se encontraron productos con ese criterio.</p>
+    <div id="libro-estado" class="app-muted" style="text-align:center; margin-top:18px;"></div>
+    <div id="libro-wrap" class="cat-book-wrap" hidden>
+      <div id="book"></div>
+    </div>
+
+    <div class="cat-deck-nav" id="nav-libro" hidden>
+      <button class="cat-deck-btn" id="btn-prev" aria-label="Página anterior"></button>
+      <button class="cat-deck-btn cat-deck-btn-zoom" id="btn-zoom" aria-label="Ampliar página"></button>
+      <span class="cat-deck-count" id="contador-pagina"></span>
+      <button class="cat-deck-btn" id="btn-next" aria-label="Página siguiente"></button>
+    </div>
 
   </div>
 </div>
@@ -35,6 +47,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
 <script src="assets/js/cartilla-vendedores.js"></script>
 <script src="assets/js/iconos.js"></script>
 <script src="assets/js/main.js"></script>
@@ -46,152 +59,128 @@
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-const CAT_ICONO = {
-  "Breakers":["proteccion","coral"], "Tableros":["tablero","teal"], "Cajas y protección":["proteccion","purple"],
-  "Suichería":["interruptor","gold"], "Sensores y detectores":["sensor","coral"], "Plafones":["bombilla","gold"],
-  "Tomacorrientes":["tomacorriente","teal"], "Conectores y accesorios":["cable","purple"],
-};
+const TOTAL_PAGINAS = 43;
+const RATIO = 792 / 612; // alto/ancho de una página de la cartilla (carta)
+let libro = null;
+let paginasCache = new Array(TOTAL_PAGINAS + 1); // 1-indexado, dataURL por página
+let paginasListas = 0;
 
-const SECCIONES = [
-  {key:"normas", label:"Normas"},
-  {key:"caracteristicas", label:"Características"},
-  {key:"diferencia", label:"Nos diferencia"},
-  {key:"dondeUsarlo", label:"Dónde usarlo"},
-  {key:"tipos", label:"Tipos"},
-  {key:"tenPresente", label:"Ten presente"},
-];
-
-let pdfCartilla = null;
-const cachePaginas = {};
-let listaActual = [];
-let posActual = 0;
-let tabActiva = 0;
-
-function getPdfCartilla(){
-  if(!pdfCartilla) pdfCartilla = pdfjsLib.getDocument("assets/docs/cartilla-vendedor.pdf").promise;
-  return pdfCartilla;
-}
-
-async function renderPaginaCartilla(pagina, escala){
-  const key = pagina + "@" + escala;
-  if(cachePaginas[key]) return cachePaginas[key];
-  const pdf = await getPdfCartilla();
-  const page = await pdf.getPage(pagina);
-  const viewport = page.getViewport({scale: escala});
+function paginaPlaceholder(){
+  const w = 340, h = Math.round(w * RATIO);
   const canvas = document.createElement("canvas");
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  await page.render({canvasContext: canvas.getContext("2d"), viewport}).promise;
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
-  cachePaginas[key] = dataUrl;
-  return dataUrl;
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#f3efe7";
+  ctx.fillRect(0, 0, w, h);
+  return canvas.toDataURL("image/png");
 }
 
-function abrirLightbox(pagina, nombre){
+async function cargarLibro(){
+  const estado = document.getElementById("libro-estado");
+  const placeholder = paginaPlaceholder();
+  const urls = new Array(TOTAL_PAGINAS).fill(placeholder);
+
+  document.getElementById("libro-wrap").hidden = false;
+  document.getElementById("nav-libro").hidden = false;
+  libro = new St.PageFlip(document.getElementById("book"), {
+    width: 340, height: Math.round(340 * RATIO),
+    size: "stretch",
+    minWidth: 220, maxWidth: 480,
+    minHeight: Math.round(220 * RATIO), maxHeight: Math.round(480 * RATIO),
+    showCover: true,
+    mobileScrollSupport: false,
+    useMouseEvents: true,
+    maxShadowOpacity: 0.4,
+  });
+  libro.loadFromImages(urls);
+  libro.on("flip", actualizarContador);
+  actualizarContador();
+
+  const pdf = await pdfjsLib.getDocument("assets/docs/cartilla-vendedor.pdf").promise;
+  for(let n = 1; n <= TOTAL_PAGINAS; n++){
+    const page = await pdf.getPage(n);
+    const viewport = page.getViewport({scale: 1.15});
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext("2d"), viewport}).promise;
+    paginasCache[n] = canvas.toDataURL("image/jpeg", 0.85);
+    paginasListas++;
+    urls[n - 1] = paginasCache[n];
+    if(paginasListas % 4 === 0 || paginasListas === TOTAL_PAGINAS){
+      libro.updateFromImages(urls.slice());
+    }
+    estado.textContent = paginasListas < TOTAL_PAGINAS ? `Preparando tu libro… ${paginasListas}/${TOTAL_PAGINAS}` : "";
+  }
+}
+
+function actualizarContador(){
+  if(!libro) return;
+  document.getElementById("contador-pagina").textContent = `${libro.getCurrentPageIndex() + 1} / ${libro.getPageCount()}`;
+}
+
+function irAPagina(pagina){
+  if(!libro) return;
+  libro.turnToPage(pagina - 1);
+  document.getElementById("resultados").classList.add("hidden");
+  document.getElementById("scroll").scrollTo({top: 0, behavior:"smooth"});
+}
+
+async function ampliarPaginaActual(){
+  if(!libro) return;
+  const idx = libro.getCurrentPageIndex() + 1;
   const body = document.getElementById("lightbox-body");
   body.innerHTML = `<div class="cat-lightbox-loading">Cargando ficha…</div>`;
   document.getElementById("lightbox").hidden = false;
-  renderPaginaCartilla(pagina, 2.4).then(url => {
-    body.innerHTML = `<img src="${url}" alt="Ficha técnica: ${nombre}">`;
-  }).catch(() => {
-    body.innerHTML = `<p class="app-muted" style="color:#fff; text-align:center; padding:30px;">No se pudo cargar la ficha.</p>`;
-  });
+  try{
+    const pdf = await pdfjsLib.getDocument("assets/docs/cartilla-vendedor.pdf").promise;
+    const page = await pdf.getPage(idx);
+    const viewport = page.getViewport({scale: 2.4});
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext("2d"), viewport}).promise;
+    body.innerHTML = `<img src="${canvas.toDataURL("image/jpeg", 0.92)}" alt="Página ${idx} de la cartilla">`;
+  }catch(e){
+    body.innerHTML = `<p class="app-muted" style="color:#fff; text-align:center; padding:30px;">No se pudo ampliar la página.</p>`;
+  }
 }
 function cerrarLightbox(){ document.getElementById("lightbox").hidden = true; }
-
-function renderTarjeta(){
-  const zona = document.getElementById("zona-tarjeta");
-  document.getElementById("sin-resultados").classList.toggle("hidden", listaActual.length > 0);
-
-  if(!listaActual.length){ zona.innerHTML = ""; return; }
-  const p = listaActual[posActual];
-  const [tipo, color] = CAT_ICONO[p.cat] || ["tablero", "navy"];
-  const secciones = SECCIONES.filter(s => p[s.key]);
-
-  zona.innerHTML = `
-    <div class="app-card cat-deck-card">
-      <div class="cat-deck-head">
-        <span class="blob-icon size-sm">${blobIcon(tipo, color)}</span>
-        <div style="flex:1;">
-          <span class="badge" style="background:var(--acc-${color}-soft, var(--acc-teal-soft)); color:var(--navy-950);">${p.cat}</span>
-          <div class="cat-card-title" style="margin-top:6px;">${p.nombre}</div>
-        </div>
-      </div>
-
-      <div class="cat-thumb-wrap" id="thumb-wrap">
-        <img class="cat-thumb" id="thumb-img" alt="Ficha técnica: ${p.nombre}">
-        <span class="cat-img-zoom">${uiIcon("buscar", 14)} Ampliar</span>
-      </div>
-
-      <div class="cat-tabs" id="tabs-row">
-        ${secciones.map((s, i) => `<button class="cat-tab${i === tabActiva ? " active" : ""}" data-i="${i}">${s.label}</button>`).join("")}
-      </div>
-      <div class="cat-tab-content" id="tab-content">
-        <div class="cat-sec-text">${secciones[tabActiva] ? p[secciones[tabActiva].key] : ""}</div>
-      </div>
-    </div>
-
-    <div class="cat-deck-nav">
-      <button class="cat-deck-btn" id="btn-prev" ${posActual === 0 ? "disabled" : ""}>${uiIcon("chevron", 18).replace('d="m9 6 6 6-6 6"', 'd="m15 6-6 6 6 6"')}</button>
-      <span class="cat-deck-count">${posActual + 1} / ${listaActual.length}</span>
-      <button class="cat-deck-btn" id="btn-next" ${posActual === listaActual.length - 1 ? "disabled" : ""}>${uiIcon("chevron", 18)}</button>
-    </div>
-
-    <div class="cat-dots" id="tira-dots"></div>
-  `;
-
-  document.getElementById("tira-dots").innerHTML = listaActual.map((item, i) => {
-    const [, c] = CAT_ICONO[item.cat] || ["tablero", "navy"];
-    return `<button class="cat-dot${i === posActual ? " active" : ""}" data-i="${i}" style="--dot-color:var(--acc-${c});" aria-label="${item.nombre}"></button>`;
-  }).join("");
-
-  const dotActivo = document.querySelector(".cat-dot.active");
-  if(dotActivo) dotActivo.scrollIntoView({inline:"center", block:"nearest"});
-
-  const thumb = document.getElementById("thumb-img");
-  renderPaginaCartilla(p.pagina, 1.1).then(url => {
-    if(listaActual[posActual] !== p) return;
-    thumb.src = url;
-    thumb.classList.add("loaded");
-  });
-  const sig = listaActual[posActual + 1];
-  if(sig) renderPaginaCartilla(sig.pagina, 1.1).catch(() => {});
-}
-
-function irA(pos){
-  if(pos < 0 || pos >= listaActual.length) return;
-  posActual = pos;
-  tabActiva = 0;
-  renderTarjeta();
-  document.getElementById("scroll").scrollTo({top: 0, behavior:"smooth"});
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(await requiereOnboardingVendedor()) return;
 
+  document.getElementById("btn-prev").innerHTML = uiIcon("chevron", 18).replace('d="m9 6 6 6-6 6"', 'd="m15 6-6 6 6 6"');
+  document.getElementById("btn-next").innerHTML = uiIcon("chevron", 18);
+  document.getElementById("btn-zoom").innerHTML = uiIcon("buscar", 18);
   document.getElementById("lightbox-close").innerHTML = uiIcon("cerrar", 22);
 
   let catActiva = "todas";
   const cats = ["todas", ...Array.from(new Set(CARTILLA_VENDEDOR.map(p => p.cat)))];
-
   document.getElementById("filtro-cat").innerHTML = cats.map(c => `
     <button class="chip${c === "todas" ? " active" : ""}" data-cat="${c}" aria-pressed="${c === "todas" ? "true" : "false"}">${c === "todas" ? "Todas" : c}</button>`).join("");
 
-  function filtrarYMostrar(mantenerProducto){
+  function mostrarResultados(){
     const q = document.getElementById("buscar").value.trim().toLowerCase();
-    const anterior = mantenerProducto ? listaActual[posActual] : null;
-    listaActual = CARTILLA_VENDEDOR.filter(p => {
-      const matchCat = catActiva === "todas" || p.cat === catActiva;
-      const matchTexto = !q || [p.nombre, p.cat, p.caracteristicas, p.dondeUsarlo].some(v => v && v.toLowerCase().includes(q));
+    const activoBusqueda = q.length > 0;
+    const activoCategoria = catActiva !== "todas";
+    const resultadosEl = document.getElementById("resultados");
+    if(!activoBusqueda && !activoCategoria){ resultadosEl.classList.add("hidden"); resultadosEl.innerHTML = ""; return; }
+
+    const filtrados = CARTILLA_VENDEDOR.filter(p => {
+      const matchCat = !activoCategoria || p.cat === catActiva;
+      const matchTexto = !activoBusqueda || [p.nombre, p.cat, p.caracteristicas, p.dondeUsarlo].some(v => v && v.toLowerCase().includes(q));
       return matchCat && matchTexto;
     });
-    const idxAnterior = anterior ? listaActual.indexOf(anterior) : -1;
-    posActual = idxAnterior >= 0 ? idxAnterior : 0;
-    tabActiva = 0;
-    renderTarjeta();
+
+    resultadosEl.classList.remove("hidden");
+    resultadosEl.innerHTML = filtrados.length
+      ? filtrados.map(p => `<button class="cat-search-row" data-pagina="${p.pagina}">
+          <span class="badge">${p.cat}</span>
+          <span class="cat-search-row-title">${p.nombre}</span>
+        </button>`).join("")
+      : `<p class="app-muted" style="padding:14px;">No se encontraron productos.</p>`;
   }
 
-  document.getElementById("buscar").addEventListener("input", () => filtrarYMostrar(false));
+  document.getElementById("buscar").addEventListener("input", mostrarResultados);
   document.getElementById("filtro-cat").addEventListener("click", e => {
     const chip = e.target.closest(".chip");
     if (!chip) return;
@@ -200,50 +189,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       c.classList.toggle("active", c === chip);
       c.setAttribute("aria-pressed", String(c === chip));
     });
-    filtrarYMostrar(false);
+    mostrarResultados();
+  });
+  document.getElementById("resultados").addEventListener("click", e => {
+    const row = e.target.closest(".cat-search-row");
+    if(!row) return;
+    irAPagina(Number(row.dataset.pagina));
   });
 
-  document.getElementById("zona-tarjeta").addEventListener("click", e => {
-    if(e.target.closest("#thumb-wrap")){
-      const p = listaActual[posActual];
-      if(p) abrirLightbox(p.pagina, p.nombre);
-      return;
-    }
-    const tab = e.target.closest(".cat-tab");
-    if(tab){
-      tabActiva = Number(tab.dataset.i);
-      renderTarjeta();
-      return;
-    }
-    if(e.target.closest("#btn-prev")){ irA(posActual - 1); return; }
-    if(e.target.closest("#btn-next")){ irA(posActual + 1); return; }
-    const dot = e.target.closest(".cat-dot");
-    if(dot){ irA(Number(dot.dataset.i)); return; }
-  });
-
+  document.getElementById("btn-prev").addEventListener("click", () => libro && libro.flipPrev());
+  document.getElementById("btn-next").addEventListener("click", () => libro && libro.flipNext());
+  document.getElementById("btn-zoom").addEventListener("click", ampliarPaginaActual);
   document.getElementById("lightbox-close").addEventListener("click", cerrarLightbox);
-  document.getElementById("lightbox").addEventListener("click", e => {
-    if(e.target.id === "lightbox") cerrarLightbox();
-  });
+  document.getElementById("lightbox").addEventListener("click", e => { if(e.target.id === "lightbox") cerrarLightbox(); });
   document.addEventListener("keydown", e => {
-    if(!document.getElementById("lightbox").hidden){
-      if(e.key === "Escape") cerrarLightbox();
-      return;
-    }
-    if(e.key === "ArrowLeft") irA(posActual - 1);
-    if(e.key === "ArrowRight") irA(posActual + 1);
+    if(!document.getElementById("lightbox").hidden){ if(e.key === "Escape") cerrarLightbox(); return; }
+    if(e.key === "ArrowLeft" && libro) libro.flipPrev();
+    if(e.key === "ArrowRight" && libro) libro.flipNext();
   });
 
-  let touchX = null;
-  document.getElementById("zona-tarjeta").addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, {passive:true});
-  document.getElementById("zona-tarjeta").addEventListener("touchend", e => {
-    if(touchX === null) return;
-    const delta = e.changedTouches[0].clientX - touchX;
-    if(Math.abs(delta) > 70) irA(posActual + (delta < 0 ? 1 : -1));
-    touchX = null;
-  }, {passive:true});
-
-  filtrarYMostrar(false);
+  cargarLibro();
 });
 </script>
 </body>
