@@ -315,7 +315,7 @@
 
 /* ---------- Casa: escena de construcción por etapas ---------- */
 .casa-construccion{ padding:16px; }
-.casa-construccion svg{ animation:casaEscenaIn .3s ease; }
+.casa-escena-img{ display:block; width:100%; height:auto; border-radius:16px; animation:casaEscenaIn .3s ease; }
 @keyframes casaEscenaIn{ from{ opacity:.3; transform:scale(.98); } to{ opacity:1; transform:scale(1); } }
 .casa-construccion-etapa{ font-size:13.5px; color:var(--navy-950); margin-top:10px; line-height:1.4; }
 .casa-construccion-etapa strong{ color:var(--navy-950); }
