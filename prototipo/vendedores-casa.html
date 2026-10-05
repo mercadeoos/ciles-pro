@@ -26,6 +26,7 @@
     <div class="app-card casa-construccion" style="margin-top:18px;">
       <div id="casa-escena"></div>
       <p class="casa-construccion-etapa" id="casa-etapa"></p>
+      <p class="casa-siguiente" id="casa-siguiente"></p>
       <div class="progress-track" style="margin-top:8px;"><div class="progress-fill" id="casa-progreso-fill" style="width:0%;"></div></div>
       <p class="app-muted" id="casa-progreso-texto" style="margin-top:6px; text-align:center;"></p>
     </div>
@@ -64,17 +65,37 @@ const ROOM_VENDEDOR = {
 const ROOM_LABEL = {sala:"Sala", cocina:"Cocina", tablero:"Tablero", bano:"Baño", cuarto:"Cuarto", exterior:"Exterior"};
 
 const ETAPAS_CONSTRUCCION = [
-  {umbral:0,  img:"assets/img/casa-etapa-1.jpg", titulo:"El terreno",        texto:"Todo gran hogar comienza con una buena base — completa tu primer módulo para arrancar."},
-  {umbral:1,  img:"assets/img/casa-etapa-2.jpg", titulo:"Los cimientos",     texto:"Vamos levantando ideas sólidas."},
-  {umbral:8,  img:"assets/img/casa-etapa-3.jpg", titulo:"Las paredes",       texto:"El conocimiento toma forma."},
-  {umbral:15, img:"assets/img/casa-etapa-4.jpg", titulo:"El techo",          texto:"Más altura para tus posibilidades."},
-  {umbral:22, img:"assets/img/casa-etapa-5.jpg", titulo:"Los detalles",      texto:"Los detalles hacen la diferencia."},
-  {umbral:29, img:"assets/img/casa-etapa-6.jpg", titulo:"Tu hogar completo", texto:"Con conocimiento también construyes un mejor futuro."},
+  {img:"assets/img/casa-etapa-1.jpg", titulo:"El terreno",        texto:"Todo gran hogar comienza con una buena base."},
+  {img:"assets/img/casa-etapa-2.jpg", titulo:"Los cimientos",     texto:"Vamos levantando ideas sólidas."},
+  {img:"assets/img/casa-etapa-3.jpg", titulo:"Las paredes",       texto:"El conocimiento toma forma."},
+  {img:"assets/img/casa-etapa-4.jpg", titulo:"El techo",          texto:"Más altura para tus posibilidades."},
+  {img:"assets/img/casa-etapa-5.jpg", titulo:"Los detalles",      texto:"Los detalles hacen la diferencia."},
+  {img:"assets/img/casa-etapa-6.jpg", titulo:"Tu hogar completo", texto:"Con conocimiento también construyes un mejor futuro."},
 ];
 
-function etapaConstruccionPara(completados){
+/* Cada hito es el conjunto de niveles que hay que terminar para pasar a la
+   siguiente etapa: Módulo 0 → cimientos, Nivel 1 → paredes, Nivel 2 → techo,
+   Nivel 3 → detalles, Niveles 4 y 5 → hogar completo. */
+const HITOS_CONSTRUCCION = [[0], [1], [2], [3], [4, 5]];
+
+function progresoHito(idsNivel){
+  const e = getEstadoVendedor();
+  const mods = NIVELES_VENDEDOR.filter(n => idsNivel.includes(n.id)).flatMap(n => n.modulos);
+  const hechos = mods.filter(m => e.completados.includes(m.id)).length;
+  return {hechos, total: mods.length};
+}
+
+function nombreCortoNivel(id){
+  const n = NIVELES_VENDEDOR.find(x => x.id === id);
+  return n ? n.nombre.split(" · ")[0] : "";
+}
+
+function etapaConstruccionActual(){
   let idx = 0;
-  ETAPAS_CONSTRUCCION.forEach((e, i) => { if(completados >= e.umbral) idx = i; });
+  for(const niveles of HITOS_CONSTRUCCION){
+    const p = progresoHito(niveles);
+    if(p.hechos === p.total) idx++; else break;
+  }
   return idx;
 }
 
@@ -87,13 +108,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   const totalModulos = todos.length;
   const hechosCount = e.completados.length;
 
-  const etapaIdx = etapaConstruccionPara(hechosCount);
+  const etapaIdx = etapaConstruccionActual();
   const etapa = ETAPAS_CONSTRUCCION[etapaIdx];
   document.getElementById("casa-escena").innerHTML = `<img src="${etapa.img}" alt="Etapa: ${etapa.titulo}" class="casa-escena-img">`;
   document.getElementById("casa-etapa").innerHTML = `<strong>${etapa.titulo}</strong> — ${etapa.texto}`;
-  const pct = Math.round((hechosCount / totalModulos) * 100);
-  document.getElementById("casa-progreso-fill").style.width = pct + "%";
-  document.getElementById("casa-progreso-texto").textContent = `${pct}% construida · ${hechosCount}/${totalModulos} módulos`;
+
+  const pctTotal = Math.round((hechosCount / totalModulos) * 100);
+  if(etapaIdx < HITOS_CONSTRUCCION.length){
+    const niveles = HITOS_CONSTRUCCION[etapaIdx];
+    const p = progresoHito(niveles);
+    const siguiente = ETAPAS_CONSTRUCCION[etapaIdx + 1];
+    const requisito = niveles.map(nombreCortoNivel).join(" y ");
+    document.getElementById("casa-siguiente").innerHTML =
+      `Para <strong>${siguiente.titulo.toLowerCase()}</strong>: termina ${requisito} (${p.hechos} de ${p.total} módulos)`;
+    document.getElementById("casa-progreso-fill").style.width = Math.round((p.hechos / p.total) * 100) + "%";
+  } else {
+    document.getElementById("casa-siguiente").innerHTML = `<strong>¡Completaste todo el programa!</strong>`;
+    document.getElementById("casa-progreso-fill").style.width = "100%";
+  }
+  document.getElementById("casa-progreso-texto").textContent = `Avance total del programa: ${pctTotal}% · ${hechosCount}/${totalModulos} módulos`;
 
   const grid = document.getElementById("casa-grid");
   grid.innerHTML = Object.keys(ROOM_LABEL).map(room => {

@@ -335,6 +335,8 @@
 @keyframes casaEscenaIn{ from{ opacity:.3; transform:scale(.98); } to{ opacity:1; transform:scale(1); } }
 .casa-construccion-etapa{ font-size:13.5px; color:var(--navy-950); margin-top:10px; line-height:1.4; }
 .casa-construccion-etapa strong{ color:var(--navy-950); }
+.casa-siguiente{ font-size:12.5px; color:var(--ink-soft); margin-top:12px; line-height:1.4; }
+.casa-siguiente strong{ color:var(--navy-950); }
 
 /* ---------- Casa blueprint (reskin) ---------- */
 .casa-grid-app{
