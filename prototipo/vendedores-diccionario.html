@@ -55,15 +55,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     const q = document.getElementById("buscar").value.trim().toLowerCase();
     const filtrados = DICCIONARIO_VENDEDOR.filter(g => {
       const matchCat = catActiva === "todas" || g.cat === catActiva;
-      const matchTexto = !q || [g.t, g.cat, g.d].some(v => v.toLowerCase().includes(q));
+      const matchTexto = !q || [g.t, g.cat, g.s, g.d, g.a, g.e].some(v => v && v.toLowerCase().includes(q));
       return matchCat && matchTexto;
     });
 
     document.getElementById("lista").innerHTML = filtrados.map(g => `
       <div class="app-card" style="margin-top:10px;">
-        <span class="badge" style="background:var(--${CAT_COLOR[g.cat]}-soft); color:var(--navy-950);">${g.cat}</span>
-        <h4 style="font-size:14.5px; color:var(--navy-950); font-weight:800;" class="mt-8">${g.t}</h4>
-        <p class="app-muted mt-8">${g.d}</p>
+        <div class="dic-head">
+          <span class="badge" style="background:var(--${CAT_COLOR[g.cat]}-soft); color:var(--navy-950);">${g.cat}</span>
+          ${g.s ? `<span class="dic-simbolo">${g.s}</span>` : ""}
+        </div>
+        <h4 style="font-size:15px; color:var(--navy-950); font-weight:800;" class="mt-8">${g.t}</h4>
+        <p class="dic-def">${g.d}</p>
+        ${g.a ? `<div class="dic-analogia"><span class="dic-etiqueta">Para entenderlo</span>${g.a}</div>` : ""}
+        <div class="dic-ejemplo"><span class="dic-etiqueta">Ejemplo</span>${g.e}</div>
       </div>`).join("");
 
     document.getElementById("sin-resultados").classList.toggle("hidden", filtrados.length > 0);

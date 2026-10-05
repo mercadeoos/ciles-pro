@@ -313,6 +313,22 @@
   100%{ transform:translateY(340px) rotate(340deg); opacity:0; }
 }
 
+/* ---------- Diccionario: definición, analogía y ejemplo ---------- */
+.dic-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.dic-simbolo{
+  font-size:12px; font-weight:800; color:var(--navy-950); background:var(--app-bg);
+  border-radius:999px; padding:4px 10px; letter-spacing:.02em;
+}
+.dic-def{ font-size:13.5px; color:var(--ink); line-height:1.55; margin-top:8px; }
+.dic-etiqueta{
+  display:block; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px;
+}
+.dic-analogia, .dic-ejemplo{ font-size:13px; line-height:1.5; border-radius:12px; padding:10px 12px; margin-top:10px; }
+.dic-analogia{ background:var(--acc-teal-soft); color:var(--navy-950); }
+.dic-analogia .dic-etiqueta{ color:var(--acc-teal); }
+.dic-ejemplo{ background:var(--orange-100); color:var(--navy-950); }
+.dic-ejemplo .dic-etiqueta{ color:var(--orange-600); }
+
 /* ---------- Casa: escena de construcción por etapas ---------- */
 .casa-construccion{ padding:16px; }
 .casa-escena-img{ display:block; width:100%; height:auto; border-radius:16px; animation:casaEscenaIn .3s ease; }
